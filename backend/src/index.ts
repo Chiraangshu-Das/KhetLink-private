@@ -3,34 +3,18 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import authRoutes from "./auth.routes.js";
+import apiRoutes from "./api.routes.js";
+import { startJobs } from "./jobs.js";
 
 const app = express();
-const PORT = Number(process.env["PORT"] ?? 4000);
-
-// ── Middleware ────────────────────────────────────────────────────────────────
-
-app.use(cors({
-  origin: "http://localhost:3000",  // Next.js dev server
-  credentials: true,                // Allow cookies cross-origin
-}));
-
-app.use(express.json());
+const PORT = Number(process.env.PORT ?? 4000);
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:3000";
+app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
-
-// ── Routes ────────────────────────────────────────────────────────────────────
-
 app.use("/api/auth", authRoutes);
-
-// Health check
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// ── Start ─────────────────────────────────────────────────────────────────────
-
-app.listen(PORT, () => {
-  console.log(`\n🌾 KhetLink backend running → http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health\n`);
-});
-
+app.use("/api", apiRoutes);
+app.get("/api/health", (_req,res)=>res.json({status:"ok",timestamp:new Date().toISOString()}));
+startJobs();
+app.listen(PORT,()=>console.log(`🌾 KhetLink backend → http://localhost:${PORT}`));
 export default app;

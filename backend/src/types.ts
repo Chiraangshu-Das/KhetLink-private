@@ -1,5 +1,2 @@
-export interface JwtPayload {
-  userId: string;
-  username: string;
-  email: string;
-}
+export type Role = "BUYER" | "FARMER" | "LOGISTICS";
+export interface JwtPayload { userId: string; firstName: string; lastName: string; email: string; }

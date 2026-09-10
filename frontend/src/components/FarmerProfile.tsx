@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import "./farmer-profile.css";
+import LanguageSelector from "./LanguageSelector";
+import LocationButton from "./LocationButton";
 
 /* This is the farmer's dedicated Profile tab — reached from the dashboard's
    top nav, header menu, and "My Profile" quick action. It is a full page,
@@ -55,18 +57,15 @@ const defaults = {
 };
 
 export default function FarmerProfilePage() {
+  useEffect(() => { document.title = "KhetLink | Farmer Interface"; }, []);
   const [data, setData] = useState(defaults);
+  const [location, setLocation] = useState({text:"",latitude:0,longitude:0});
   const [activeGroup, setActiveGroup] = useState<(typeof groups)[number]>("Vegetables");
   const [saved, setSaved] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const raw = window.localStorage.getItem("khetlink-farmer-profile");
-    if (!raw) return;
-    try {
-      const savedData = JSON.parse(raw);
-      setData({ ...defaults, ...savedData, products: savedData.products ?? defaults.products });
-    } catch {}
+    (async()=>{try{const me=await (await fetch('/api/auth/me',{credentials:'include'})).json();setData(prev=>({...prev,profileName:`${me.firstName??''} ${me.lastName??''}`.trim()||prev.profileName,profileImage:me.profileImage||prev.profileImage}));if(me.farmer)setLocation({text:me.farmer.locationText||'',latitude:me.farmer.latitude||0,longitude:me.farmer.longitude||0});}catch{}})();
   }, []);
 
   const initials = useMemo(() => {
@@ -97,10 +96,8 @@ export default function FarmerProfilePage() {
     }));
   };
 
-  const save = () => {
-    window.localStorage.setItem("khetlink-farmer-profile", JSON.stringify(data));
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2200);
+  const save = async () => {
+    try {const r=await fetch('/api/profile',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:'FARMER',farmName:data.farmArea,landAcres:data.farmSize?Number(String(data.farmSize).replace(/[^0-9.]/g,''))||undefined:undefined,experienceYears:data.experience?Number(String(data.experience).match(/\d+/)?.[0]||0)||undefined:undefined,locationText:location.text,latitude:location.latitude,longitude:location.longitude,profileImage:data.profileImage,language:localStorage.getItem('khetlink-language')||'en'})});const body=await r.json();if(!r.ok)throw new Error(body.error||'Unable to save profile');setSaved(true);window.setTimeout(()=>setSaved(false),2200);}catch(e){alert(e instanceof Error?e.message:'Unable to save profile');}
   };
 
   const visibleProducts = products.filter((p) => p.group === activeGroup);
@@ -120,7 +117,7 @@ export default function FarmerProfilePage() {
           <Link href="/farmer?view=shipment">Tracking</Link>
           <Link href="/farmer/profile" className="active">Profile</Link>
         </nav>
-        <div className="khl-profile-top-actions">
+        <div className="khl-profile-top-actions"><LanguageSelector compact />
           <Link href="/farmer" className="khl-back-link"><span className="arrow" aria-hidden>←</span><span className="label">Back to Dashboard</span></Link>
           <div className="khl-profile-mini-avatar">{initials}</div>
         </div>
@@ -173,6 +170,7 @@ export default function FarmerProfilePage() {
                 <label><span>Farm size</span><select value={data.farmSize} onChange={(e) => setData({ ...data, farmSize: e.target.value })}><option value="">Select farm size</option><option>Less than 1 acre</option><option>1–2 acres</option><option>2–5 acres</option><option>5–10 acres</option><option>10+ acres</option></select></label>
                 <label><span>Farming experience</span><select value={data.experience} onChange={(e) => setData({ ...data, experience: e.target.value })}><option value="">Select experience</option><option>Just starting</option><option>1–5 years</option><option>6–10 years</option><option>11–20 years</option><option>20+ years</option></select></label>
                 <label><span>Preferred selling area</span><select value={data.sellingArea} onChange={(e) => setData({ ...data, sellingArea: e.target.value })}><option value="">Choose preference</option><option>Nearby buyers</option><option>Within my district</option><option>Across West Bengal</option><option>Pan-India</option></select></label>
+                <label><span>Farm location (mandatory)</span><div className="khl-input-prefix"><input value={location.text} onChange={(e)=>setLocation({...location,text:e.target.value})} placeholder="City, State, location details"/><LocationButton onLocation={setLocation}/></div></label>
               </div>
             </section>
 
@@ -197,7 +195,7 @@ export default function FarmerProfilePage() {
                 <div className="farmer-profile-photo-actions">
                   <label className="farmer-profile-upload-button">Upload picture<input type="file" accept="image/*" onChange={(e) => handleProfileImage(e.target.files?.[0])} hidden /></label>
                   {data.profileImage && <button type="button" className="farmer-profile-remove-button" onClick={removeProfileImage}>Remove</button>}
-                  <p>Use a clear farm or profile photo. The image is stored locally in this demo and can later map directly to a backend profile-image URL.</p>
+                  <p>Use a clear farm or profile photo. The image is saved with your KhetLink account and is used across interfaces.</p>
                 </div>
               </div>
               <div className="khl-avatar-options">
@@ -214,7 +212,7 @@ export default function FarmerProfilePage() {
         </div>
       </main>
 
-      <div className="khl-profile-save-dock"><div><strong>{saved ? "✓ Profile saved successfully" : "Ready to update your profile?"}</strong><span>Your changes are saved on this device.</span></div><button onClick={save}>{saved ? "Saved" : "Save Changes"}</button></div>
+      <div className="khl-profile-save-dock"><div><strong>{saved ? "✓ Profile saved successfully" : "Ready to update your profile?"}</strong><span>Your changes are saved to your KhetLink account.</span></div><button onClick={save}>{saved ? "Saved" : "Save Changes"}</button></div>
     </div>
   );
 }

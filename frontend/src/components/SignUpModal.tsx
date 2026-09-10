@@ -33,9 +33,11 @@ export default function SignupModal({
     firstName: '',
     lastName: '',
     email: '',
+    countryCode: '+91',
     phone: '',
     password: '',
     confirmPassword: '',
+    profileImage: '',
   });
 
   const set = (field: keyof typeof form) =>
@@ -70,8 +72,7 @@ export default function SignupModal({
         return;
       }
 
-      // Success → redirect to dashboard
-      window.location.href = '/dashboard';
+      window.location.href = '/';
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {
@@ -227,29 +228,24 @@ export default function SignupModal({
 
           {/* PHONE NUMBER */}
 
-          <div className="signup-input-wrapper">
-
-            <Phone
-              className="signup-input-icon"
-              size={20}
-              strokeWidth={1.8}
-            />
-
-            <input
-              type="tel"
-              name="phone"
-              placeholder="Phone Number"
-              autoComplete="tel"
-              required
-              value={form.phone}
-              onChange={set('phone')}
-            />
-
+          <div className="signup-phone-row">
+            <div className="signup-input-wrapper signup-country-code">
+              <input aria-label="Country code" list="country-codes" value={form.countryCode} onChange={(e)=>setForm(prev=>({...prev,countryCode:e.target.value}))} placeholder="+91" />
+              <datalist id="country-codes"><option value="+91">India</option><option value="+1">USA / Canada</option><option value="+44">United Kingdom</option><option value="+971">UAE</option><option value="+65">Singapore</option><option value="+61">Australia</option><option value="+81">Japan</option><option value="+49">Germany</option><option value="+33">France</option></datalist>
+            </div>
+            <div className="signup-input-wrapper signup-phone-number">
+              <Phone className="signup-input-icon" size={20} strokeWidth={1.8}/>
+              <input type="tel" name="phone" placeholder="Phone Number" autoComplete="tel" required value={form.phone} onChange={set('phone')}/>
+            </div>
           </div>
           {fieldErrors.phone && (
             <p className="signup-field-error">{fieldErrors.phone[0]}</p>
           )}
 
+          <label className="signup-upload-row">
+            <span>Profile photo (optional)</span>
+            <input type="file" accept="image/*" onChange={(e)=>{const file=e.target.files?.[0]; if(!file)return; const reader=new FileReader(); reader.onload=()=>setForm(prev=>({...prev,profileImage:String(reader.result||'')})); reader.readAsDataURL(file);}} />
+          </label>
 
           {/* PASSWORD */}
 

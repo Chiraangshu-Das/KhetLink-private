@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useRef, useMemo, MouseEvent } from "react";
 import Link from "next/link";
 import "./farmer.css";
+import LanguageSelector from "./LanguageSelector";
+import LocationButton from "./LocationButton";
+import { apiGet, apiPatch, apiPost } from "../lib/api";
 
 /* Place the attached leaf logo at /public/Khetlink_Logo.svg (Next.js). */
 const LOGO_SRC = "/Khetlink_Logo.svg";
@@ -81,6 +84,8 @@ type AdStatus = "accepted" | "rejected" | "offered" | "countered" | "negotiating
    contact — so deals are always closed through KhetLink instead
    of going around it. */
 interface BuyerAd {
+  requirementId?: string;
+  listingId?: string;
   buyerRef: string;
   buyerType: string;
   region: string;
@@ -146,7 +151,7 @@ const initialBuyerAds: BuyerAd[] = [
   { buyerRef: "B-5512", buyerType: "Grocery Mart", region: "Kolkata region", product: "Onion", qty: "100 kg", price: 23, status: null, bargainOpen: false, offer: "" },
 ];
 
-const transactions: Transaction[] = [
+let transactions: Transaction[] = [
   { date: "18 Aug 2024", crop: "Tomato", qty: "100 kg", amt: "₹2,400", status: "Paid" },
   { date: "16 Aug 2024", crop: "Potato", qty: "200 kg", amt: "₹4,000", status: "Paid" },
   { date: "14 Aug 2024", crop: "Onion", qty: "150 kg", amt: "₹3,300", status: "Paid" },
@@ -161,7 +166,7 @@ const transactions: Transaction[] = [
 
 /* Shipment descriptions are masked the same way — buyer type + broad
    region, never a company name or address. */
-const shipments: Shipment[] = [
+let shipments: Shipment[] = [
   {
     id: "#KL1024",
     desc: "Tomato · 300 kg → Verified buyer (Hotel & Restaurant, Kolkata region)",
@@ -186,7 +191,7 @@ const shipments: Shipment[] = [
   },
 ];
 
-const otherFarmers: OtherFarmer[] = [
+let otherFarmers: OtherFarmer[] = [
   { name: "Tomato", rating: 4.8, qty: "120 kg available", price: 24 },
   { name: "Potato", rating: 4.6, qty: "200 kg available", price: 20 },
   { name: "Onion", rating: 4.7, qty: "150 kg available", price: 22 },
@@ -333,7 +338,7 @@ function Header({
         {navItem("Tracking", () => openFullScreen("shipment"), activeFullScreen === "shipment")}
         <Link href={PROFILE_ROUTE}>Profile</Link>
       </nav>
-      <div className="khl-head-right">
+      <div className="khl-head-right"><LanguageSelector compact />
         <div
           className="khl-bell"
           aria-label={`${notifications.length} recent updates`}
@@ -951,21 +956,14 @@ export default function KhetLinkDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [listings, setListings] = useState<Listing[]>(initialListings);
-  const [buyerAds, setBuyerAds] = useState<BuyerAd[]>(initialBuyerAds);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [buyerAds, setBuyerAds] = useState<BuyerAd[]>([]);
 
-  // Profile name is read-only here for greeting purposes; editing now
-  // happens entirely on the dedicated Profile page.
-  const [profileName, setProfileName] = useState("Ramesh Kumar");
+  const [profileName, setProfileName] = useState("Farmer");
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("khetlink-farmer-profile");
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (saved.profileName) setProfileName(saved.profileName);
-      }
-    } catch {}
+    document.title = "KhetLink | Farmer Interface";
+    const load=async()=>{try{const me=await (await fetch('/api/auth/me',{credentials:'include'})).json();setProfileName(`${me.firstName??''} ${me.lastName??''}`.trim()||'Farmer');const [ls,reqs,orders]=await Promise.all([(await fetch('/api/listings',{credentials:'include'})).json(),(await fetch('/api/farmer/requests',{credentials:'include'})).json(),(await fetch('/api/orders',{credentials:'include'})).json()]);const farmerListings=(Array.isArray(ls)?ls:[]).filter((x:any)=>x.farmerId===me.id);setListings(farmerListings.map((x:any)=>({name:x.product?.name||'Produce',qty:x.quantityAvailable,price:x.price,status:x.quantityAvailable>0?'Active':'Sold'})));setBuyerAds((Array.isArray(reqs)?reqs:[]).flatMap((r:any)=>r.items.map((i:any)=>({buyerRef:r.code,buyerType:'Buyer',region:r.locationText||'Location',product:i.product?.name||'Produce',qty:`${i.quantity} ${i.unit}`,price:i.maxPrice,status:null,bargainOpen:false,offer:'',requirementId:r.id,listingId:farmerListings.find((x:any)=>x.productId===i.productId)?.id||''}))));transactions=(Array.isArray(orders)?orders:[]).map((o:any)=>{const i=o.items?.[0];return {date:new Date(o.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),crop:i?.product?.name||'Produce',qty:`${i?.quantity||0} ${i?.unit||'kg'}`,amt:`₹${Number(o.totalAmount||0).toFixed(0)}`,status:o.paymentStatus==='PAID'?'Paid':'Pending'};});shipments=(Array.isArray(orders)?orders:[]).filter((o:any)=>o.shipment).map((o:any)=>({id:o.code,desc:`${o.items?.[0]?.product?.name||'Produce'} · ${o.items?.[0]?.quantity||0} ${o.items?.[0]?.unit||'kg'} → Buyer`,steps:[{t:'Order Confirmed',s:new Date(o.createdAt).toLocaleString('en-IN'),done:true},{t:'Processing',s:'Farmer handoff verified',done:['PROCESSING','IN_TRANSIT','DELIVERED'].includes(o.status)},{t:'In Transit',s:'Logistics update',done:['IN_TRANSIT','DELIVERED'].includes(o.status)},{t:'Delivered',s:'Buyer handoff',done:o.status==='DELIVERED'}]}));}catch{}};load();const timer=window.setInterval(load,10000);return()=>window.clearInterval(timer);
   }, []);
 
   const offersRef = useRef<HTMLDivElement>(null);
@@ -993,8 +991,9 @@ export default function KhetLinkDashboard() {
 
   const addListing = (listing: Listing) => setListings((prev) => [listing, ...prev]);
 
-  const respondAd = (idx: number, status: AdStatus) => {
-    setBuyerAds((prev) => prev.map((a, i) => (i === idx ? { ...a, status, bargainOpen: false } : a)));
+  const respondAd = async (idx: number, status: AdStatus) => {
+    const current=buyerAds[idx]; if(!current?.requirementId||!current.listingId){return;}
+    try{const me=await apiGet<any>('/auth/me');const offer=await apiPost<any>('/offers',{requirementId:current.requirementId,farmerId:me.id,listingId:current.listingId,quantity:Number(current.qty.match(/[0-9.]+/)?.[0]||0),offeredPrice:Number(current.price||0)});if(status==='accepted')await apiPatch(`/offers/${offer.id}`,{status:'ACCEPTED'});else if(status==='rejected')await apiPatch(`/offers/${offer.id}`,{status:'REJECTED'});setBuyerAds(prev=>prev.map((a,i)=>i===idx?{...a,status,bargainOpen:false}:a));}catch{}
   };
 
   const toggleBargain = (idx: number) => {
@@ -1005,24 +1004,10 @@ export default function KhetLinkDashboard() {
     setBuyerAds((prev) => prev.map((a, i) => (i === idx ? { ...a, offer: val } : a)));
   };
 
-  const sendOffer = (idx: number) => {
-    const current = buyerAds[idx];
-    const counter = Number(current?.offer);
-    if (!current || !Number.isFinite(counter) || counter <= 0) return;
-
-    setBuyerAds((prev) => prev.map((a, i) => (i === idx ? { ...a, status: "offered", bargainOpen: false } : a)));
-
-    window.setTimeout(() => {
-      const outcome = Math.random();
-      if (outcome < 0.38) {
-        setBuyerAds((prev) => prev.map((a, i) => (i === idx ? { ...a, status: "accepted", bargainOpen: false } : a)));
-      } else if (outcome < 0.78) {
-        const buyerCounter = Math.round((counter + current.price) / 2);
-        setBuyerAds((prev) => prev.map((a, i) => (i === idx ? { ...a, status: "countered", offer: String(buyerCounter), bargainOpen: false } : a)));
-      } else {
-        setBuyerAds((prev) => prev.map((a, i) => (i === idx ? { ...a, status: "rejected", bargainOpen: false } : a)));
-      }
-    }, 1300);
+  const sendOffer = async (idx: number) => {
+    const current = buyerAds[idx]; const counter=Number(current?.offer);
+    if(!current||!current.requirementId||!current.listingId||!Number.isFinite(counter)||counter<=0)return;
+    try{await apiPost('/offers',{requirementId:current.requirementId,farmerId:(await apiGet<any>('/auth/me')).id,listingId:current.listingId,quantity:Number(current.qty.match(/[0-9.]+/)?.[0]||0),offeredPrice:counter});setBuyerAds(prev=>prev.map((a,i)=>i===idx?{...a,status:'offered',bargainOpen:false}:a));}catch{}
   };
 
   const pendingAcceptedCount = buyerAds.filter((a) => a.status === "accepted").length;

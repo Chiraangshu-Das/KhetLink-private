@@ -65,7 +65,7 @@ export default function LoginModal({ onClose, onSignUp }: LoginModalProps) {
       }
 
       // Success → redirect to dashboard
-      window.location.href = '/dashboard';
+      window.location.href = '/';
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {
