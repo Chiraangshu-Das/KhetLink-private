@@ -7,6 +7,7 @@ import './SignupModal.css';
 interface SignupModalProps {
   onClose: () => void;
   onLogin?: () => void;
+  onAuthenticated?: () => void | Promise<void>;
 }
 
 interface FieldErrors {
@@ -21,6 +22,7 @@ interface FieldErrors {
 export default function SignupModal({
   onClose,
   onLogin,
+  onAuthenticated,
 }: SignupModalProps) {
 
   const [showPassword, setShowPassword] = useState(false);
@@ -72,8 +74,8 @@ export default function SignupModal({
         return;
       }
 
-      // Success → redirect to dashboard
-      window.location.href = '/dashboard';
+      // Stay on the landing page and let it refresh auth state smoothly.
+      if (onAuthenticated) await onAuthenticated();
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {

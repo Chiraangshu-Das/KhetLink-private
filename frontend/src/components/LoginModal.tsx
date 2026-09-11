@@ -14,6 +14,7 @@ import './LoginModal.css';
 interface LoginModalProps {
   onClose: () => void;
   onSignUp: () => void;
+  onAuthenticated?: () => void | Promise<void>;
 }
 
 interface FieldErrors {
@@ -21,7 +22,7 @@ interface FieldErrors {
   password?: string[];
 }
 
-export default function LoginModal({ onClose, onSignUp }: LoginModalProps) {
+export default function LoginModal({ onClose, onSignUp, onAuthenticated }: LoginModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState('');
@@ -64,8 +65,8 @@ export default function LoginModal({ onClose, onSignUp }: LoginModalProps) {
         return;
       }
 
-      // Success → redirect to dashboard
-      window.location.href = '/dashboard';
+      // Stay on the landing page and let it refresh auth state smoothly.
+      if (onAuthenticated) await onAuthenticated();
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {

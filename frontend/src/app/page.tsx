@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, User2, Leaf, Truck, Store, ClipboardList, Brain, ShieldCheck, TrendingUp, HandCoins, LogOut } from 'lucide-react';
+import { ArrowRight, User2, Leaf, Truck, Store, ClipboardList, Brain, ShieldCheck, TrendingUp, HandCoins, LogOut, Menu, X, Languages, ChevronDown } from 'lucide-react';
 import './page.css';
 import LoginModal from '../components/LoginModal';
 import SignupModal from '../components/SignUpModal';
@@ -27,18 +27,65 @@ export default function LandingPage() {
   const [showTerms, setShowTerms] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [activeSection, setActiveSection] = useState('Home');
-  const [user, setUser] = useState<{firstName?:string;lastName?:string;profileImage?:string}>({});
+  const [user, setUser] = useState<{firstName?:string;lastName?:string;profileImage?:string;language?:string}>({});
+  const [language, setLanguage] = useState('en');
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Check auth status on mount
+  const languageLabel = (code?: string) => ({
+    en: 'English',
+    hi: 'हिन्दी',
+    bn: 'বাংলা',
+  } as Record<string, string>)[code || 'en'] || 'English';
+
+  const languageCode = (value?: string) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'hindi' || normalized === 'hi') return 'hi';
+    if (normalized === 'bengali' || normalized === 'bn') return 'bn';
+    return 'en';
+  };
+
+  const refreshAuth = async () => {
+    try {
+      const r = await fetch('/api/auth/me', {
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      if (!r.ok) {
+        setIsLoggedIn(false);
+        setUser({});
+        return false;
+      }
+      const data = await r.json();
+      const nextUser = data.user ?? {};
+      setIsLoggedIn(true);
+      setUser(nextUser);
+      setLanguage(languageCode(nextUser.language));
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setAuthChecked(true);
+    }
+  };
+
+  // Fast, silent auth sync — mirrors the Farmer workspace behavior without reloading the page.
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(async (r) => {
-        setIsLoggedIn(r.ok);
-        if (r.ok) { try { const data = await r.json(); setUser(data.user ?? {}); } catch {} }
-      })
-      .catch(() => setIsLoggedIn(false))
-      .finally(() => setAuthChecked(true));
-  }, []);
+    refreshAuth();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && !isLoginOpen && !isSignupOpen && !showTerms) refreshAuth();
+    }, 3000);
+    const onFocus = () => refreshAuth();
+    const onVisibility = () => { if (document.visibilityState === 'visible') refreshAuth(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [isLoginOpen, isSignupOpen, showTerms]);
 
   useEffect(() => {const handleScroll = () => {const sections = ['Home','How-It-Works','Benefits','Contact',];
       const offset = 110;
@@ -61,10 +108,8 @@ export default function LandingPage() {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setIsLoggedIn(false);
     setUser({});
-    // If currently on dashboard, go home
-    if (window.location.pathname.startsWith('/dashboard')) {
-      window.location.href = '/';
-    }
+    // Role pages are protected by middleware; logging out returns the user to the landing page.
+    if (window.location.pathname !== '/') router.push('/');
   };
 
   const handleGetStarted = () => {
@@ -80,14 +125,30 @@ export default function LandingPage() {
     setIsSignupOpen(true);
   };
 
+  const openRoleTab = (role: UserRole) => {
+    const target = `khetlink-${role}`;
+    const roleWindow = window.open(`/${role}`, target);
+    if (roleWindow) roleWindow.focus();
+  };
+
   const handleRoleClick = async (role: UserRole) => {
     if (!isLoggedIn) { setIsLoginOpen(true); return; }
+
+    // Open/reuse a named tab immediately from the user click so popup blockers
+    // do not interfere. If the role is not yet active, close the temporary tab
+    // and let Terms & Conditions handle activation.
+    const target = `khetlink-${role}`;
+    const roleWindow = window.open('about:blank', target);
     try {
       const response = await fetch('/api/roles', { credentials: 'include' });
       const data = await response.json();
       const active = data.roles?.some((r: { role: string; termsVersion?: string }) => r.role === role.toUpperCase() && r.termsVersion === TERMS_VERSIONS[role]);
-      if (active) { router.push(`/${role}`); return; }
+      if (active) {
+        if (roleWindow) { roleWindow.location.href = `/${role}`; roleWindow.focus(); }
+        return;
+      }
     } catch {}
+    if (roleWindow) roleWindow.close();
     setSelectedRole(role); setShowTerms(true);
   };
 
@@ -98,6 +159,7 @@ export default function LandingPage() {
 
       {/*NAVBAR*/}
       <nav className="navbar">
+        <button type="button" className="landing-mobile-menu-button" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu size={22}/></button>
         <a href="#Home">
           <div className="logo-group">
             <div className="logo-icon-slot">
@@ -122,15 +184,58 @@ export default function LandingPage() {
           {authChecked && (
             isLoggedIn ? (
               <>
-                <div className="landing-user-avatar" title={`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Profile"}>
-                  {user.profileImage ? <img src={user.profileImage} alt="Profile" /> : `${(user.firstName ?? "U")[0] ?? "U"}${(user.lastName ?? "")[0] ?? ""}`.toUpperCase()}
+                <div className="landing-language-wrap">
+                  <button type="button" className="landing-language-button" onClick={() => setLanguageOpen(v => !v)} aria-label="Language">
+                    <Languages size={15} /><span>{languageLabel(language)}</span><ChevronDown size={13} />
+                  </button>
+                  {languageOpen && (
+                    <div className="landing-language-menu">
+                      {(['en','hi','bn'] as const).map(code => (
+                        <button type="button" key={code} onClick={async () => {
+                          setLanguage(code);
+                          setLanguageOpen(false);
+                          try {
+                            await fetch('/api/profile/me', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ language: code }),
+                            });
+                            await refreshAuth();
+                          } catch {}
+                        }}>
+                          {languageLabel(code)}{language === code ? ' ✓' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <button className="btn-login" onClick={handleLogout}>
-                  <LogOut size={13}/> Logout
+                <button type="button" className="landing-user-button" onClick={handleLogout} title="Logout">
+                  <span className="landing-user-avatar">
+                    {user.profileImage ? <img src={user.profileImage} alt="Profile" /> : `${(user.firstName ?? "U")[0] ?? "U"}${(user.lastName ?? "")[0] ?? ""}`.toUpperCase()}
+                  </span>
+                  <span className="landing-user-copy">
+                    <strong>{`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'User'}</strong>
+                    <small>Logout</small>
+                  </span>
                 </button>
-              </>
+               </>
             ) : (
               <>
+                <div className="landing-language-wrap">
+                  <button type="button" className="landing-language-button" onClick={() => setLanguageOpen(v => !v)} aria-label="Language">
+                    <Languages size={15} /><span>{languageLabel(language)}</span><ChevronDown size={13} />
+                  </button>
+                  {languageOpen && (
+                    <div className="landing-language-menu">
+                      {(['en','hi','bn'] as const).map(code => (
+                        <button type="button" key={code} onClick={() => { setLanguage(code); setLanguageOpen(false); }}>
+                          {languageLabel(code)}{language === code ? ' ✓' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button className="btn-login" onClick={() => setIsLoginOpen(true)}><User2 size={13}/> Login</button>
                 <button className="btn-signup" onClick={() => setIsSignupOpen(true)}><User2 size={13}/> Sign Up</button>
               </>
@@ -138,6 +243,41 @@ export default function LandingPage() {
           )}
         </div>
       </nav>
+
+      {mobileOpen && <button type="button" className="landing-sidebar-backdrop" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
+      <aside className={`landing-mobile-sidebar ${mobileOpen ? 'open' : ''}`}>
+        <div className="landing-mobile-sidebar-header">
+          <div className="logo-group">
+            <div className="logo-icon-slot"><img src="./KhetLink_Logo.svg" alt="KhetLink Logo" width={34} height={34}/></div>
+            <div><div className="brand-title">KhetLink</div><div className="brand-subtitle"> Farm Fresh • Smart Supply </div></div>
+          </div>
+          <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X size={20}/></button>
+        </div>
+        <div className="landing-mobile-sidebar-nav">
+          {[
+            ['Home','Home'],['How-It-Works','How It Works'],['Benefits','Benefits'],['Contact','Contact']
+          ].map(([id,label]) => (
+            <a key={id} href={`#${id}`} className={activeSection === id ? 'active' : ''} onClick={() => setMobileOpen(false)}>{label}</a>
+          ))}
+          <a href="/about" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>About</a>
+        </div>
+        <div className="landing-mobile-sidebar-bottom">
+          {isLoggedIn ? (
+            <>
+              <div className="landing-mobile-account">
+                <span className="landing-user-avatar">{user.profileImage ? <img src={user.profileImage} alt="Profile"/> : `${(user.firstName ?? "U")[0] ?? "U"}${(user.lastName ?? "")[0] ?? ""}`.toUpperCase()}</span>
+                <span><strong>{`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'User'}</strong><small>Signed in</small></span>
+              </div>
+              <button type="button" className="landing-mobile-logout" onClick={() => { setMobileOpen(false); handleLogout(); }}><LogOut size={15}/> Logout</button>
+            </>
+          ) : (
+            <div className="landing-mobile-auth">
+              <button type="button" className="btn-login" onClick={() => { setMobileOpen(false); setIsLoginOpen(true); }}>Login</button>
+              <button type="button" className="btn-signup" onClick={() => { setMobileOpen(false); setIsSignupOpen(true); }}>Sign Up</button>
+            </div>
+          )}
+        </div>
+      </aside>
 
       {/*HERO*/}
       <section id="Home" className="hero-wrapper">
@@ -496,16 +636,16 @@ export default function LandingPage() {
       </footer>
 
       {/* LOGIN MODAL */}
-      {isLoginOpen && (<LoginModal onClose={() => setIsLoginOpen(false)} onSignUp={() => {setIsLoginOpen(false); setIsSignupOpen(true);}}/>)}
+      {isLoginOpen && (<LoginModal onClose={() => { setIsLoginOpen(false); refreshAuth(); }} onAuthenticated={async () => { setIsLoginOpen(false); await refreshAuth(); }} onSignUp={() => {setIsLoginOpen(false); setIsSignupOpen(true);}}/>)}
       {/* Sigup Modal */}
-      {isSignupOpen && (<SignupModal onClose={() => setIsSignupOpen(false)} onLogin={() => {setIsSignupOpen(false); setIsLoginOpen(true);}}/>)}
+      {isSignupOpen && (<SignupModal onClose={() => { setIsSignupOpen(false); refreshAuth(); }} onAuthenticated={async () => { setIsSignupOpen(false); await refreshAuth(); }} onLogin={() => {setIsSignupOpen(false); setIsLoginOpen(true);}}/>)}
       {/* Show Terms */}
       {showTerms && selectedRole && (<TermsAndConditions role={selectedRole} onBack={() => {setShowTerms(false); setSelectedRole(null);}}
         onAgree={async () => {
           const response = await fetch('/api/roles/activate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ role: selectedRole?.toUpperCase(), accepted: true, termsVersion: TERMS_VERSIONS[selectedRole!] }) });
           if (!response.ok) return;
           const role = selectedRole!; setShowTerms(false); setSelectedRole(null);
-          router.push(`/${role}`);
+          openRoleTab(role);
         }}/>)}
     </div>
   );

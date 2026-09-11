@@ -112,12 +112,10 @@ type RequirementUnit = "kg" | "L" | "ton" | "dozen";
 
 interface FarmerListing {
   id: string;
-  catalogProductId?: string;
-  category?: string;
   produce: string;
   availableQuantity: number;
   pricePerKg: number;
-  unit: RequirementUnit;
+  unit: "kg";
 }
 
 interface Farmer {
@@ -138,7 +136,6 @@ interface Farmer {
 interface Product {
   id: string;
   listingId: string;
-  catalogProductId?: string;
   farmerId: string;
   farmerName: string;
   name: string;
@@ -243,6 +240,164 @@ interface BuyerSession {
   location?: string;
   language?: string;
 }
+
+/* =========================================================
+   MOCK DATA
+   ---------------------------------------------------------
+   Replace these arrays with API responses later.
+========================================================= */
+
+const MOCK_BUYER: BuyerSession = {
+  username: "KhetLink Buyer",
+  phoneNumber: "+91 98765 43210",
+  buyerId: "BUY-2026-0001",
+  company: "KhetLink Buyer",
+  language: "English",
+};
+
+const MOCK_FARMERS: Farmer[] = [
+  {
+    id: "FAR-1001",
+    name: "Rajesh Kumar",
+    phoneNumber: "+91 98765 11001",
+    location: "Nashik, Maharashtra",
+    distanceKm: 14,
+    rating: 0,
+    reviews: 0,
+    verified: true,
+    avatar: "RK",
+    farm: "Kumar Fresh Farms",
+    about:
+      "Family-owned farm supplying fresh vegetables directly to local buyers.",
+    listings: [
+      {
+        id: "L-1001",
+        produce: "Tomato",
+        availableQuantity: 250,
+        pricePerKg: 32,
+        unit: "kg",
+      },
+      {
+        id: "L-1002",
+        produce: "Potato",
+        availableQuantity: 180,
+        pricePerKg: 28,
+        unit: "kg",
+      },
+      {
+        id: "L-1003",
+        produce: "Onion",
+        availableQuantity: 300,
+        pricePerKg: 30,
+        unit: "kg",
+      },
+    ],
+  },
+  {
+    id: "FAR-1002",
+    name: "Suresh Patil",
+    phoneNumber: "+91 98765 11002",
+    location: "Pune, Maharashtra",
+    distanceKm: 38,
+    rating: 0,
+    reviews: 0,
+    verified: true,
+    avatar: "SP",
+    farm: "Patil Agro Farm",
+    about:
+      "Produces seasonal vegetables and maintains direct supply relationships.",
+    listings: [
+      {
+        id: "L-2001",
+        produce: "Potato",
+        availableQuantity: 500,
+        pricePerKg: 25,
+        unit: "kg",
+      },
+      {
+        id: "L-2002",
+        produce: "Tomato",
+        availableQuantity: 120,
+        pricePerKg: 35,
+        unit: "kg",
+      },
+      {
+        id: "L-2003",
+        produce: "Carrot",
+        availableQuantity: 160,
+        pricePerKg: 42,
+        unit: "kg",
+      },
+    ],
+  },
+  {
+    id: "FAR-1003",
+    name: "Anita Sharma",
+    phoneNumber: "+91 98765 11003",
+    location: "Ahmednagar, Maharashtra",
+    distanceKm: 61,
+    rating: 0,
+    reviews: 0,
+    verified: true,
+    avatar: "AS",
+    farm: "Sharma Organic Fields",
+    about:
+      "Organic produce supplier focusing on quality-controlled vegetables.",
+    listings: [
+      {
+        id: "L-3001",
+        produce: "Onion",
+        availableQuantity: 420,
+        pricePerKg: 27,
+        unit: "kg",
+      },
+      {
+        id: "L-3002",
+        produce: "Tomato",
+        availableQuantity: 200,
+        pricePerKg: 31,
+        unit: "kg",
+      },
+      {
+        id: "L-3003",
+        produce: "Spinach",
+        availableQuantity: 90,
+        pricePerKg: 24,
+        unit: "kg",
+      },
+    ],
+  },
+  {
+    id: "FAR-1004",
+    name: "Vijay More",
+    phoneNumber: "+91 98765 11004",
+    location: "Satara, Maharashtra",
+    distanceKm: 74,
+    rating: 0,
+    reviews: 0,
+    verified: false,
+    avatar: "VM",
+    farm: "More Vegetable Farm",
+    about:
+      "Small and medium-scale vegetable producer serving nearby markets.",
+    listings: [
+      {
+        id: "L-4001",
+        produce: "Cabbage",
+        availableQuantity: 220,
+        pricePerKg: 22,
+        unit: "kg",
+      },
+      {
+        id: "L-4002",
+        produce: "Potato",
+        availableQuantity: 260,
+        pricePerKg: 29,
+        unit: "kg",
+      },
+    ],
+  },
+];
 
 /* =========================================================
    UTILITY FUNCTIONS
@@ -539,8 +694,8 @@ export default function Buyer() {
   const [activeTab, setActiveTab] =
   useState<View>("Dashboard");
 
-  const [session, setSession] = useState<BuyerSession>({ username: "Buyer", phoneNumber: "", buyerId: "", language: "English" });
-  const [farmers, setFarmers] = useState<Farmer[]>([]);
+  const [session, setSession] =
+    useState<BuyerSession>(MOCK_BUYER);
 
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
@@ -598,51 +753,20 @@ export default function Buyer() {
   ------------------------------------------------------- */
 
   useEffect(() => {
-    const bootstrap = async () => {
+    const storedSession =
+      window.localStorage.getItem(
+        "khetlink-mock-buyer",
+      );
+
+    if (storedSession) {
       try {
-        const [profileRes, listingsRes, requirementsRes, ordersRes, notificationsRes] = await Promise.all([
-          fetch("/api/profile/me", { credentials: "include" }),
-          fetch("/api/listings", { credentials: "include" }),
-          fetch("/api/requirements", { credentials: "include" }),
-          fetch("/api/orders", { credentials: "include" }),
-          fetch("/api/notifications", { credentials: "include" }),
-        ]);
-        if (!profileRes.ok) return;
-        const profile = await profileRes.json();
-        const user = profile.user;
-        setSession({ username: `${user.firstName} ${user.lastName}`.trim(), phoneNumber: user.phone ?? "", buyerId: user.roles?.find((r: {role:string}) => r.role === "BUYER")?.roleCode ?? "", profileImage: user.profileImage ?? undefined, email: user.email, company: user.buyer?.company ?? undefined, location: user.location ?? undefined, language: user.language ?? "English" });
-        if (listingsRes.ok) {
-          const data = await listingsRes.json();
-          const grouped = new Map<string, Farmer>();
-          for (const row of data.listings ?? []) {
-            const farmer = row.farmer;
-            const key = farmer.id;
-            const existing = grouped.get(key) ?? { id: key, name: `${farmer.firstName} ${farmer.lastName}`.trim(), phoneNumber: "", location: farmer.location ?? "", distanceKm: 0, rating: 0, reviews: 0, verified: farmer.farmer?.verified ?? false, avatar: farmer.profileImage ?? "", farm: farmer.farmer?.farmName ?? "", about: "", listings: [] };
-            existing.listings.push({ id: row.id, produce: row.product.name, availableQuantity: row.quantity, pricePerKg: row.price, unit: row.unit === "litre" ? "L" : (row.unit as RequirementUnit), catalogProductId: row.product.id, category: row.product.category?.name });
-            grouped.set(key, existing);
-          }
-          setFarmers([...grouped.values()]);
-        }
-        if (requirementsRes.ok) {
-          const data = await requirementsRes.json();
-          setRequirements((data.requirements ?? []).map((r: any) => ({
-            id: r.id, buyerId: r.buyerId, createdAt: r.createdAt, status: r.status === "BROWSE_PRODUCTS" ? "Draft" : r.status === "NOT_FOUND" ? "Not Found" : r.status === "CONFIRMED" ? "Confirmed" : r.status === "CLOSED" ? "Closed" : "Pending",
-            items: (r.items ?? []).map((i: any) => ({ id: i.id, produce: i.product?.name ?? "Produce", quantity: i.quantity, unit: i.unit === "litre" ? "L" : i.unit, minPrice: i.minPrice, maxPrice: i.maxPrice, requiredBy: i.requiredBy ?? "", location: i.location ?? r.location ?? "" }))
-          })));
-          const allOffers = (data.requirements ?? []).flatMap((r: any) => (r.offers ?? []).map((o: any) => ({ id:o.id, requirementId:r.id, farmerId:o.farmerId, selectedListingIds:(o.items??[]).map((x:any)=>x.listingId), offeredPrice:o.offeredPrice, originalPrice:o.originalPrice ?? o.offeredPrice, buyerConfirmed:o.buyerConfirmed, farmerConfirmed:o.farmerConfirmed, status:o.status === "ACCEPTED" ? "Accepted" : o.status === "REJECTED" ? "Rejected" : o.status === "COUNTERED" || o.status === "NEGOTIATING" ? "Negotiating" : "Requested" })));
-          setOffers(allOffers);
-        }
-        if (ordersRes.ok) {
-          const data = await ordersRes.json();
-          setOrders((data.orders ?? []).map((o:any) => ({ id:o.id, type:"Marketplace", product:o.items?.[0]?.product?.name ?? "Order", quantity:o.items?.reduce((s:number,i:any)=>s+i.quantity,0) ?? 0, unit:o.items?.[0]?.unit === "kg" ? "kg" : "kg", cost:o.total ?? 0, seller:`${o.seller?.firstName ?? "Farmer"} ${o.seller?.lastName ?? ""}`.trim(), sellerId:o.sellerId, buyer:session.username, buyerId:o.buyerId, deliveryDate:o.createdAt, status:o.status === "PROCESSING" ? "Processing" : o.status === "IN_TRANSIT" ? "In Transit" : o.status === "DELIVERED" ? "Delivered" : o.status === "CANCELLED" ? "Pending" : "Confirmed", createdAt:o.createdAt })));
-        }
-        if (notificationsRes.ok) {
-          const data = await notificationsRes.json();
-          setNotifications((data.notifications ?? []).map((n:any) => ({ id:n.id, title:n.title, message:n.message, type:n.type === "SHIPMENT" ? "shipment" : n.type === "ORDER" || n.type === "PAYMENT" ? "order" : "system", read:n.read, createdAt:n.createdAt })));
-        }
-      } catch {}
-    };
-    bootstrap();
+        setSession(
+          JSON.parse(storedSession) as BuyerSession,
+        );
+      } catch {
+        // Keep mock session.
+      }
+    }
 
     const storedCart =
       window.localStorage.getItem(
@@ -659,6 +783,13 @@ export default function Buyer() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "khetlink-mock-buyer",
+      JSON.stringify(session),
+    );
+  }, [session]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -684,15 +815,14 @@ export default function Buyer() {
   ------------------------------------------------------- */
 
   const products = useMemo<Product[]>(() => {
-    const base = farmers.flatMap((farmer) =>
+    const base = MOCK_FARMERS.flatMap((farmer) =>
       farmer.listings.map((listing) => ({
         id: `P-${listing.id}`,
         listingId: listing.id,
-        catalogProductId: (listing as any).catalogProductId,
         farmerId: farmer.id,
         farmerName: farmer.name,
         name: listing.produce,
-        category: listing.category ?? "Other",
+        category: "Vegetables",
         quantityAvailable:
           listing.availableQuantity,
         pricePerKg: listing.pricePerKg,
@@ -703,8 +833,16 @@ export default function Buyer() {
       })),
     );
 
-    return base;
-  }, [farmers]);
+    const fruits: Product[] = [
+      { id: "P-FR-1", listingId: "FR-1", farmerId: "FAR-1001", farmerName: "Rajesh Kumar", name: "Mango", category: "Fruits", quantityAvailable: 180, pricePerKg: 95, rating: 0, reviews: 0, deliveryTime: "1–2 days", image: getProductImage("Mango") },
+      { id: "P-FR-2", listingId: "FR-2", farmerId: "FAR-1002", farmerName: "Suresh Patil", name: "Banana", category: "Fruits", quantityAvailable: 320, pricePerKg: 48, rating: 0, reviews: 0, deliveryTime: "1 day", image: getProductImage("Banana") },
+      { id: "P-FR-3", listingId: "FR-3", farmerId: "FAR-1003", farmerName: "Anita Sharma", name: "Apple", category: "Fruits", quantityAvailable: 140, pricePerKg: 125, rating: 0, reviews: 0, deliveryTime: "2–3 days", image: getProductImage("Apple") },
+      { id: "P-FR-4", listingId: "FR-4", farmerId: "FAR-1004", farmerName: "Vijay More", name: "Orange", category: "Fruits", quantityAvailable: 220, pricePerKg: 68, rating: 0, reviews: 0, deliveryTime: "1–2 days", image: getProductImage("Orange") },
+      { id: "P-FR-5", listingId: "FR-5", farmerId: "FAR-1003", farmerName: "Anita Sharma", name: "Grapes", category: "Fruits", quantityAvailable: 110, pricePerKg: 82, rating: 0, reviews: 0, deliveryTime: "2 days", image: getProductImage("Grapes") },
+    ];
+
+    return [...base, ...fruits];
+  }, []);
 
   const categories = useMemo(() => {
     return ["All", "Vegetables", "Fruits", "Herbs", "Organic"];
@@ -779,6 +917,44 @@ export default function Buyer() {
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
+
+  const processedConfirmedOrders = useRef<Set<string>>(new Set());
+
+useEffect(() => {
+  const newConfirmedOrders = orders.filter(
+    (order) =>
+      order.status === "Confirmed" &&
+      !processedConfirmedOrders.current.has(order.id),
+  );
+
+  if (newConfirmedOrders.length === 0) return;
+
+  const timers = newConfirmedOrders.map((order) => {
+    // Mark it immediately so this order can NEVER be scheduled twice.
+    processedConfirmedOrders.current.add(order.id);
+
+    const delay = 2000 + Math.floor(Math.random() * 5000);
+
+    return window.setTimeout(() => {
+      const next =
+        ["Confirmed", "Processing", "In Transit", "Delivered"][
+          Math.floor(Math.random() * 4)
+        ] as OrderStatus;
+
+      setOrders((current) =>
+        current.map((item) =>
+          item.id === order.id && item.status === "Confirmed"
+            ? { ...item, status: next }
+            : item,
+        ),
+      );
+    }, delay);
+  });
+
+  return () => {
+    timers.forEach((timer) => window.clearTimeout(timer));
+  };
+}, [orders]);
 
   /* -------------------------------------------------------
      CART
@@ -1111,16 +1287,80 @@ export default function Buyer() {
     showToast("Requirement item removed.");
   };
 
-  const submitRequirement = async (requirementId: string) => {
-    const requirement = requirements.find(item => item.id === requirementId);
-    if (!requirement || requirement.items.length === 0) { showToast("Add at least one requirement."); return; }
-    try {
-      const response = await fetch("/api/requirements", { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ location: requirement.items[0]?.location, items: requirement.items.map(i => ({ productId: products.find(p=>p.name.toLowerCase()===i.produce.toLowerCase())?.id?.replace(/^P-/ , "") ?? i.id, quantity:i.quantity, unit:i.unit === "L" ? "litre" : i.unit ?? "kg", minPrice:i.minPrice, maxPrice:i.maxPrice, requiredBy:i.requiredBy || undefined, location:i.location })) }) });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Unable to create requirement");
-      setRequirements(current => current.map(item => item.id === requirementId ? { ...item, id: payload.requirementId, status: payload.status === "NOT_FOUND" ? "Not Found" : "Pending" } : item));
-      showToast(payload.matchedFarmers?.length ? `${payload.matchedFarmers.length} matching farmers found.` : "No farmers currently match your requirements.");
-    } catch { showToast("Unable to create requirement. Please retry."); }
+  const submitRequirement = (
+    requirementId: string,
+  ) => {
+    const requirement =
+      requirements.find(
+        (item) => item.id === requirementId,
+      );
+
+    if (
+      !requirement ||
+      requirement.items.length === 0
+    ) {
+      showToast(
+        "Add at least one requirement.",
+      );
+      return;
+    }
+
+    setRequirements((current) =>
+      current.map((item) =>
+        item.id === requirementId
+          ? {
+              ...item,
+              status: "Searching",
+            }
+          : item,
+      ),
+    );
+
+    /*
+     * Mock search:
+     * A farmer qualifies when they have at least
+     * one listing whose produce matches and whose
+     * available quantity meets the requirement.
+     *
+     * The backend can later implement this same
+     * rule with a database query.
+     */
+    const matchedFarmers =
+      MOCK_FARMERS.filter((farmer) =>
+        farmer.listings.some((listing) =>
+          requirement.items.some(
+            (item) =>
+              listing.produce.toLowerCase() ===
+                item.produce.toLowerCase() &&
+              listing.availableQuantity >=
+                toKg(item.quantity, item.unit),
+          ),
+        ),
+      );
+
+    setRequirements((current) =>
+      current.map((item) =>
+        item.id === requirementId
+          ? {
+              ...item,
+              status:
+                matchedFarmers.length > 0
+                  ? "Matched"
+                  : "Not Found",
+            }
+          : item,
+      ),
+    );
+    if (matchedFarmers.length === 0) {
+  window.setTimeout(() => {
+    dismissRequirement(requirementId);
+  }, 3000);
+}
+    showToast(
+      matchedFarmers.length > 0
+        ? `${matchedFarmers.length} matching farmers found.`
+        : "No farmers currently match your requirements.",
+    );
   };
 
   const getEligibleListings = (
@@ -1169,35 +1409,243 @@ export default function Buyer() {
     setSelectedListingQuantities((current) => ({ ...current, [farmerId]: { ...(current[farmerId] ?? {}), [listingId]: quantity } }));
   };
 
-  const sendProcurementRequest = async (requirement: Requirement, farmer: Farmer) => {
-    const eligible = getEligibleListings(farmer, requirement);
-    const selected = selectedListingIds[farmer.id] ?? eligible.map(l => l.id);
-    const finalListingIds = selected.filter(id => eligible.some(l => l.id === id));
-    if (!finalListingIds.length) { showToast("Select at least one matching produce."); return; }
-    const quantities = Object.fromEntries(finalListingIds.map(id => {
-      const listing = farmer.listings.find(l=>l.id===id)!;
-      const req = requirement.items.find(i=>i.produce.toLowerCase()===listing.produce.toLowerCase());
-      return [id, selectedListingQuantities[farmer.id]?.[id] ?? Math.min(toKg(req?.quantity ?? listing.availableQuantity, req?.unit ?? "kg"), listing.availableQuantity)];
-    }));
-    const avg = finalListingIds.reduce((sum,id)=>sum+(farmer.listings.find(l=>l.id===id)?.pricePerKg??0),0)/finalListingIds.length;
-    try {
-      const response = await fetch(`/api/requirements/${requirement.id}/offer`, { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ farmerId:farmer.id, offeredPrice:Math.max(1,Math.round(avg)), items:finalListingIds.map(id=>({listingId:id,quantity:quantities[id]})) }) });
-      if (!response.ok) throw new Error();
-      const payload=await response.json();
-      const newOffer: FarmerOffer={ id:payload.offer.id, requirementId:requirement.id, farmerId:farmer.id, selectedListingIds:finalListingIds, selectedQuantities:quantities, offeredPrice:payload.offer.offeredPrice, originalPrice:payload.offer.originalPrice, buyerConfirmed:false, farmerConfirmed:false, status:"Requested" };
-      setOffers(current=>[newOffer,...current.filter(o=>!(o.requirementId===requirement.id&&o.farmerId===farmer.id))]);
-      showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
-    } catch { showToast("Unable to send request. Please retry."); }
+  const sendProcurementRequest = (
+    requirement: Requirement,
+    farmer: Farmer,
+  ) => {
+    const eligible =
+      getEligibleListings(
+        farmer,
+        requirement,
+      );
+
+    const selected =
+      selectedListingIds[farmer.id] ??
+      [];
+
+    const finalListingIds =
+      selected.length > 0
+        ? selected.filter((id) =>
+            eligible.some(
+              (listing) =>
+                listing.id === id,
+            ),
+          )
+        : eligible.map(
+            (listing) => listing.id,
+          );
+
+    if (finalListingIds.length === 0) {
+      showToast(
+        "Select at least one matching produce.",
+      );
+      return;
+    }
+
+    const selectedListings =
+      farmer.listings.filter((listing) =>
+        finalListingIds.includes(
+          listing.id,
+        ),
+      );
+
+    const averagePrice =
+      selectedListings.reduce(
+        (sum, listing) =>
+          sum + listing.pricePerKg,
+        0,
+      ) /
+      Math.max(
+        selectedListings.length,
+        1,
+      );
+
+    const existingOffer =
+      offers.find(
+        (offer) =>
+          offer.requirementId ===
+            requirement.id &&
+          offer.farmerId === farmer.id,
+      );
+
+    const newOffer: FarmerOffer = {
+      id:
+        existingOffer?.id ??
+        createId("OFFER"),
+      requirementId: requirement.id,
+      farmerId: farmer.id,
+      selectedListingIds: finalListingIds,
+      selectedQuantities: Object.fromEntries(
+        finalListingIds.map((id) => {
+          const listing = farmer.listings.find((item) => item.id === id);
+          const requirementItem = requirement.items.find(
+            (item) => item.produce.toLowerCase() === listing?.produce.toLowerCase(),
+          );
+          const requestedKg = requirementItem
+            ? toKg(requirementItem.quantity, requirementItem.unit ?? "kg")
+            : listing?.availableQuantity ?? 0;
+          return [
+            id,
+            selectedListingQuantities[farmer.id]?.[id] ??
+              Math.min(requestedKg, listing?.availableQuantity ?? requestedKg),
+          ];
+        }),
+      ),
+      offeredPrice: Math.round(
+        averagePrice,
+      ),
+      originalPrice: Math.round(averagePrice),
+      buyerConfirmed: false,
+      farmerConfirmed: false,
+      status: "Requested",
+    };
+
+    setOffers((current) =>
+      existingOffer
+        ? current.map((offer) =>
+            offer.id === existingOffer.id
+              ? newOffer
+              : offer,
+          )
+        : [newOffer, ...current],
+    );
+
+    pushNotification({
+      title: "Procurement request sent",
+      message: `Your request was sent to ${farmer.name}.`,
+      type: "order",
+    });
+
+    showToast(
+      `Request sent to ${farmer.name}. Waiting for farmer response…`,
+    );
+    scheduleMarketplaceFarmerResponse(requirement.id, farmer.id, newOffer.offeredPrice, false);
   };
 
-  const negotiateOffer = async (requirementId: string, farmerId: string, price: number) => {
-    const negotiatedPrice = Math.max(1, Number(price));
-    try {
-      const response=await fetch(`/api/requirements/${requirementId}/counter`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({farmerId,price:negotiatedPrice})});
-      if(!response.ok) throw new Error();
-      setOffers(current=>current.map(item=>item.requirementId===requirementId&&item.farmerId===farmerId?{...item,offeredPrice:negotiatedPrice,buyerConfirmed:false,farmerConfirmed:false,status:"Negotiating"}:item));
-      showToast("Negotiated price sent. Waiting for the farmer…");
-    } catch { showToast("Unable to send the negotiated price. Please retry."); }
+  const scheduleMarketplaceFarmerResponse = (
+    requirementId: string,
+    farmerId: string,
+    buyerPrice: number,
+    allowCounter = false,
+  ) => {
+    const farmer = MOCK_FARMERS.find((item) => item.id === farmerId);
+    if (!farmer) return;
+
+    const delay = 900 + Math.floor(Math.random() * 1600);
+    window.setTimeout(() => {
+      const currentPrice = Math.max(1, buyerPrice);
+      const outcome = Math.random();
+
+      if (!allowCounter && outcome < 0.72) {
+        setOffers((current) =>
+          current.map((item) =>
+            item.requirementId === requirementId && item.farmerId === farmerId
+              ? { ...item, offeredPrice: currentPrice, farmerConfirmed: true, buyerConfirmed: false, status: "Negotiating" }
+              : item,
+          ),
+        );
+        pushNotification({
+          title: "Farmer accepted",
+          message: `${farmer.name} accepted ${formatCurrency(currentPrice)}.`,
+          type: "order",
+        });
+        showToast(`${farmer.name} accepted ${formatCurrency(currentPrice)}.`);
+        return;
+      }
+
+      if (allowCounter && outcome < 0.32) {
+        setOffers((current) =>
+          current.map((item) =>
+            item.requirementId === requirementId && item.farmerId === farmerId
+              ? { ...item, offeredPrice: currentPrice, farmerConfirmed: true, buyerConfirmed: false, status: "Negotiating" }
+              : item,
+          ),
+        );
+        pushNotification({
+          title: "Farmer accepted your negotiated price",
+          message: `${farmer.name} accepted ${formatCurrency(currentPrice)}.`,
+          type: "order",
+        });
+        showToast(`${farmer.name} accepted your negotiated price.`);
+        return;
+      }
+
+      if (allowCounter && outcome < 0.86) {
+        const offer = offers.find(
+          (item) => item.requirementId === requirementId && item.farmerId === farmerId,
+        );
+        const originalPrice = Math.max(1, offer?.originalPrice ?? currentPrice);
+        const negotiatedPrice = Math.max(1, currentPrice);
+        const lowerPrice = Math.min(originalPrice, negotiatedPrice);
+        const upperPrice = Math.max(originalPrice, negotiatedPrice);
+        const counter =
+          lowerPrice === upperPrice
+            ? lowerPrice
+            : Math.round(lowerPrice + Math.random() * (upperPrice - lowerPrice));
+        setOffers((current) =>
+          current.map((item) =>
+            item.requirementId === requirementId && item.farmerId === farmerId
+              ? { ...item, offeredPrice: counter, originalPrice: item.originalPrice ?? originalPrice, farmerConfirmed: true, buyerConfirmed: false, status: "Negotiating" }
+              : item,
+          ),
+        );
+        pushNotification({
+          title: "Farmer sent a counter offer",
+          message: `${farmer.name} countered at ${formatCurrency(counter)}.`,
+          type: "order",
+        });
+        showToast(`${farmer.name} countered at ${formatCurrency(counter)}.`);
+        return;
+      }
+
+      setOffers((current) =>
+        current.map((item) =>
+          item.requirementId === requirementId && item.farmerId === farmerId
+            ? { ...item, offeredPrice: currentPrice, farmerConfirmed: false, buyerConfirmed: false, status: "Rejected" }
+            : item,
+        ),
+      );
+      clearMarketplaceOfferAfterDelay(requirementId, farmerId);
+      pushNotification({
+        title: "Farmer declined",
+        message: `${farmer.name} declined the request at ${formatCurrency(currentPrice)}.`,
+        type: "order",
+      });
+      showToast(`${farmer.name} declined the request.`);
+    }, delay);
+  };
+
+  const negotiateOffer = (
+    requirementId: string,
+    farmerId: string,
+    price: number,
+  ) => {
+    const offer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmerId);
+    if (!offer) return;
+    const negotiatedPrice = Math.max(1, Number(price) || offer.offeredPrice);
+
+    setOffers((current) =>
+      current.map((item) =>
+        item.requirementId === requirementId && item.farmerId === farmerId
+          ? {
+              ...item,
+              offeredPrice: negotiatedPrice,
+              originalPrice: item.originalPrice ?? item.offeredPrice,
+              buyerConfirmed: false,
+              farmerConfirmed: false,
+              status: "Negotiating",
+            }
+          : item,
+      ),
+    );
+
+    pushNotification({
+      title: "Negotiation sent",
+      message: `Your negotiated price of ${formatCurrency(negotiatedPrice)} was sent to the farmer.`,
+      type: "order",
+    });
+    showToast("Negotiated price sent. Waiting for the farmer…");
+    scheduleMarketplaceFarmerResponse(requirementId, farmerId, negotiatedPrice, true);
   };
 
   const farmerAcceptOffer = (
@@ -1211,18 +1659,174 @@ export default function Buyer() {
     setOffers((current) => current.map((item) => item.requirementId === requirementId && item.farmerId === farmerId ? { ...item, farmerConfirmed: true, status: item.buyerConfirmed ? "Accepted" : "Negotiating" } : item));
   };
 
-  const finalizeProcurementOrder = async (requirementId: string, farmerId: string) => {
-    const offer = offers.find(o=>o.requirementId===requirementId&&o.farmerId===farmerId);
-    const farmer = farmers.find(f=>f.id===farmerId);
-    if(!offer||!farmer){showToast("Offer details are unavailable.");return;}
-    const items=offer.selectedListingIds.map(id=>{const l=farmer.listings.find(x=>x.id===id);return l?{productId:(products.find(p=>p.listingId===id)?.id?.replace(/^P-/ , "") ?? ""),listingId:id,quantity:offer.selectedQuantities?.[id]??l.availableQuantity,unit:l.unit,unitPrice:offer.offeredPrice}:null}).filter(Boolean) as any[];
-    try{
-      const response=await fetch("/api/orders",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({sellerId:farmerId,requirementId,items,distanceKm:0})});
-      const payload=await response.json(); if(!response.ok) throw new Error(payload.error||"Order creation failed");
-      setOrders(current=>[{id:payload.order.id,type:"Marketplace",product:items[0]?.productId??"Order",quantity:items.reduce((s,i)=>s+i.quantity,0),unit:"kg",cost:payload.order.total,seller:farmer.name,sellerId:farmerId,buyer:session.username,buyerId:session.buyerId,deliveryDate:new Date().toISOString(),status:"Confirmed",createdAt:new Date().toISOString()},...current]);
-      setOffers(current=>current.map(o=>o.id===offer.id?{...o,buyerConfirmed:true,farmerConfirmed:true,status:"Accepted"}:o));
-      showToast("Order created. Payment is due within one hour.");
-    }catch(e:any){showToast(e?.message||"Unable to create order.");}
+  const finalizeProcurementOrder = (
+    requirementId: string,
+    farmerId: string,
+  ) => {
+    const requirement = requirements.find((item) => item.id === requirementId);
+    const offer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmerId);
+    const farmer = MOCK_FARMERS.find((item) => item.id === farmerId);
+
+    if (!offer || !farmer) return;
+
+    const marketplaceProduct = offer.productId
+      ? products.find((item) => item.id === offer.productId)
+      : undefined;
+
+    const effectiveRequirement: Requirement | null = requirement ?? (marketplaceProduct ? {
+      id: requirementId,
+      buyerId: session.buyerId,
+      createdAt: new Date().toISOString(),
+      status: "Matched",
+      items: [{
+        id: `${requirementId}-ITEM`,
+        produce: marketplaceProduct.name,
+        quantity: offer.requestedQuantity ?? 1,
+        unit: offer.requestedUnit ?? "kg",
+        minPrice: marketplaceProduct.pricePerKg,
+        maxPrice: marketplaceProduct.pricePerKg,
+        requiredBy: futureDate(7),
+        location: farmer.location,
+      }],
+    } : null);
+
+    if (!effectiveRequirement) return;
+
+    // Marketplace offers may use the catalog listing id, so finalize also matches the farmer listing by product name.
+    const listings =
+      farmer.listings.filter(
+        (listing) =>
+          (offer.selectedListingIds.includes(listing.id) ||
+            (marketplaceProduct &&
+              listing.produce.toLowerCase() ===
+                marketplaceProduct.name.toLowerCase())),
+      );
+
+    const matchedItems =
+      marketplaceProduct
+        ? effectiveRequirement.items
+        : effectiveRequirement.items.filter(
+            (item) =>
+              listings.some(
+                (listing) =>
+                  listing.produce.toLowerCase() ===
+                  item.produce.toLowerCase(),
+              ),
+          );
+
+    if (matchedItems.length === 0) {
+      showToast(
+        "No selected request items found.",
+      );
+      return;
+    }
+
+    const newOrders: Order[] =
+      matchedItems.map(
+        (item, index) => ({
+          id: `${effectiveRequirement.id}-O${Date.now()}-${index + 1}`,
+          type: "Marketplace",
+          product: item.produce,
+          quantity: Math.max(0.01, toKg(
+            offer.selectedQuantities?.[
+              marketplaceProduct?.listingId ?? item.id
+            ] ??
+              offer.requestedQuantity ??
+              item.quantity,
+            item.unit ?? "kg",
+          )),
+          unit: "kg",
+          cost: Math.max(0.01, toKg(
+            offer.selectedQuantities?.[
+              marketplaceProduct?.listingId ?? item.id
+            ] ??
+              offer.requestedQuantity ??
+              item.quantity,
+            item.unit ?? "kg",
+          )) *
+            (offer.requestedUnit
+              ? offer.offeredPrice /
+                (toKg(1, offer.requestedUnit) || 1)
+              : offer.offeredPrice),
+          seller: farmer.name,
+          sellerId: farmer.id,
+          buyer: session.username,
+          buyerId: session.buyerId,
+          deliveryDate:
+            item.requiredBy,
+          status: "Confirmed",
+          createdAt:
+            new Date().toISOString(),
+        }),
+      );
+
+    setOrders((current) => [
+      ...newOrders,
+      ...current,
+    ]);
+
+    if (requirement) {
+  const alreadyFulfilled = orders
+    .filter((order) => order.id.startsWith(`${requirementId}-O`))
+    .reduce((sum, order) => sum + order.quantity, 0);
+
+  const newlyFulfilled = newOrders.reduce(
+    (sum, order) => sum + order.quantity,
+    0,
+  );
+
+  const requiredQuantity = requirement.items.reduce(
+    (sum, reqItem) =>
+      sum + toKg(reqItem.quantity, reqItem.unit ?? "kg"),
+    0,
+  );
+
+  const isFullyFulfilled =
+    alreadyFulfilled + newlyFulfilled >= requiredQuantity;
+
+  if (isFullyFulfilled) {
+    window.setTimeout(() => {
+      dismissRequirement(requirementId);
+    }, 3000);
+  } else {
+    setRequirements((current) =>
+      current.map((item) =>
+        item.id === requirementId
+          ? { ...item, status: "Matched" }
+          : item,
+      ),
+    );
+  }
+}
+
+    setOffers((current) =>
+      current.map((item) =>
+        item.requirementId ===
+            requirementId &&
+        item.farmerId === farmerId
+          ? {
+              ...item,
+              buyerConfirmed: true,
+              farmerConfirmed: true,
+              status: "Accepted",
+            }
+          : item,
+      ),
+    );
+    clearMarketplaceOfferAfterDelay(requirementId, farmerId);
+
+    newOrders.forEach((order) => {
+      pushNotification({
+        title:
+          "Marketplace order confirmed",
+        message: `${order.product} from ${order.seller} is confirmed as a Marketplace order under ${requirementId}.`,
+        type: "order",
+      });
+    });
+
+    showToast(
+      "Both parties confirmed. Marketplace order created.",
+    );
   };
 
   const clearMarketplaceOfferAfterDelay = (requirementId: string, farmerId: string) => {
@@ -1239,11 +1843,11 @@ export default function Buyer() {
     }, 4500);
   };
 
-  const declineOffer = async (requirementId: string, farmerId: string) => {
-    const farmer = farmers.find(item => item.id === farmerId);
-    await fetch(`/api/requirements/${requirementId}/decline`, { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({farmerId}) }).catch(()=>{});
-    setOffers(current=>current.map(item=>item.requirementId===requirementId&&item.farmerId===farmerId?{...item,status:"Rejected",buyerConfirmed:false,farmerConfirmed:false}:item));
-    pushNotification({title:"Negotiation declined",message:`You declined the offer from ${farmer?.name??"farmer"}.`,type:"order"});
+  const declineOffer = (requirementId: string, farmerId: string) => {
+    const farmer = MOCK_FARMERS.find((item) => item.id === farmerId);
+    setOffers((current) => current.map((item) => item.requirementId === requirementId && item.farmerId === farmerId ? { ...item, status: "Rejected", buyerConfirmed: false, farmerConfirmed: false } : item));
+    clearMarketplaceOfferAfterDelay(requirementId, farmerId);
+    pushNotification({ title: "Negotiation declined", message: `You declined the offer from ${farmer?.name ?? "farmer"}.`, type: "order" });
     showToast("Offer declined.");
   };
 
@@ -1515,17 +2119,38 @@ const dismissRequirement = (requirementId: string) => {
       marketplaceSearch,
     ]);
 
-  const addMarketplaceProductToRequirement = async (product: Product, quantity: number, unit: RequirementUnit) => {
-    const farmer = farmers.find(item => item.id === product.farmerId); if (!farmer || !product.catalogProductId) return;
-    const safeQuantity = Math.min(fromKg(product.quantityAvailable, unit), Math.max(minimumQuantityForUnit(unit), quantity));
-    try {
-      const reqRes=await fetch("/api/requirements",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:session.location,items:[{productId:product.catalogProductId,quantity:safeQuantity,unit:unit === "L" ? "litre" : unit,minPrice:product.pricePerKg,maxPrice:product.pricePerKg,location:session.location}]})});
-      const reqData=await reqRes.json(); if(!reqRes.ok) throw new Error();
-      const offerRes=await fetch(`/api/requirements/${reqData.requirementId}/offer`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({farmerId:farmer.id,offeredPrice:product.pricePerKg,items:[{listingId:product.listingId,quantity:safeQuantity}]})});
-      const offerData=await offerRes.json(); if(!offerRes.ok) throw new Error();
-      setOffers(current=>[{id:offerData.offer.id,requirementId:reqData.requirementId,farmerId:farmer.id,productId:product.id,selectedListingIds:[product.listingId],selectedQuantities:{[product.listingId]:safeQuantity},requestedQuantity:safeQuantity,requestedUnit:unit,offeredPrice:offerData.offer.offeredPrice,originalPrice:offerData.offer.originalPrice,buyerConfirmed:false,farmerConfirmed:false,status:"Requested"},...current]);
-      showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
-    } catch { showToast("Unable to send request. Please retry."); }
+  const addMarketplaceProductToRequirement = (
+    product: Product,
+    quantity: number,
+    unit: RequirementUnit,
+  ) => {
+    const farmer = MOCK_FARMERS.find((item) => item.id === product.farmerId);
+    if (!farmer) return;
+    const safeQuantity = Math.min(
+      fromKg(product.quantityAvailable, unit),
+      Math.max(minimumQuantityForUnit(unit), quantity),
+    );
+    const requirementId = `MARKETPLACE-${product.id}`;
+    const existingOffer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmer.id && item.status !== "Accepted" && item.status !== "Rejected");
+    const newOffer: FarmerOffer = {
+      id: existingOffer?.id ?? createId("OFFER"),
+      requirementId,
+      farmerId: farmer.id,
+      productId: product.id,
+      selectedListingIds: [product.listingId],
+      selectedQuantities: { [product.listingId]: safeQuantity },
+      requestedQuantity: safeQuantity,
+      requestedUnit: unit,
+      offeredPrice: pricePerSelectedUnit(product.pricePerKg, unit),
+      originalPrice: pricePerSelectedUnit(product.pricePerKg, unit),
+      buyerConfirmed: false,
+      farmerConfirmed: false,
+      status: "Requested",
+    };
+    setOffers((current) => existingOffer ? current.map((item) => item.id === existingOffer.id ? newOffer : item) : [newOffer, ...current]);
+    pushNotification({ title: "Request sent to farmer", message: `Your ${formatQuantity(safeQuantity, unit)} request was sent to ${farmer.name}.`, type: "order" });
+    showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
+    scheduleMarketplaceFarmerResponse(requirementId, farmer.id, newOffer.offeredPrice, false);
   };
 
   /* -------------------------------------------------------
@@ -1581,7 +2206,7 @@ const dismissRequirement = (requirementId: string) => {
               orders={orders}
               requirements={requirements}
               farmers={
-                farmers
+                MOCK_FARMERS
               }
               totalSpend={
                 totalSpend
@@ -1626,14 +2251,14 @@ const dismissRequirement = (requirementId: string) => {
                 setMarketplaceSearch
               }
               onProduct={(product) => {
-                const farmer = farmers.find((item) => item.id === product.farmerId);
+                const farmer = MOCK_FARMERS.find((item) => item.id === product.farmerId);
                 if (farmer) setSelectedFarmer(farmer);
               }}
               procurement={{
                 form: requirementForm,
                 draft: draftRequirement,
                 requirements,
-                farmers: farmers,
+                farmers: MOCK_FARMERS,
                 offers,
                 selectedListingIds,
                 selectedListingQuantities,
@@ -2912,7 +3537,7 @@ function ProductCard({
                 <span className="farmer-response-waiting">Waiting for farmer response…</span>
               )}
             </div>
-            <AcceptanceStatus farmer={farmers.find((item) => item.id === product.farmerId)!} offer={visibleOffer} />
+            <AcceptanceStatus farmer={MOCK_FARMERS.find((item) => item.id === product.farmerId)!} offer={visibleOffer} />
           </div>
         )}
       </div>
@@ -5204,9 +5829,13 @@ function Profile({
           undefined,
       };
 
-    fetch("/api/profile/me", { method:"PATCH", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:nextSession.email, phone:nextSession.phoneNumber, profileImage:nextSession.profileImage, location:nextSession.location, language:nextSession.language, company:nextSession.company }) })
-      .then(async r=>{ if(!r.ok) throw new Error(); onSessionChange(nextSession); showToast("Profile updated successfully."); })
-      .catch(()=>showToast("Unable to update profile. Please retry."));
+    onSessionChange(
+      nextSession,
+    );
+
+    showToast(
+      "Profile updated successfully.",
+    );
   };
 
   const totalOrders =

@@ -7,6 +7,12 @@ import { verificationCode, logisticsFee, notify } from "../services/business.js"
 const router = Router();
 router.use(requireAuth);
 
+const broadRegion = (location?: string | null) => {
+  const parts = String(location || "").split(",").map(x => x.trim()).filter(Boolean);
+  return parts.length >= 2 ? `${parts[parts.length - 2]}, ${parts[parts.length - 1]}` : (parts[0] || "Location not shared");
+};
+const distanceKm = (lat1:number,lon1:number,lat2:number,lon2:number) => { const r=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2; return Math.round(r*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))*10)/10; };
+
 async function expireOrderIfNeeded(orderId: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order || order.paymentStatus !== "PENDING" || !order.paymentExpiresAt || order.paymentExpiresAt > new Date()) return order;
@@ -28,8 +34,17 @@ router.get("/", async (req: AuthRequest, res) => {
     include: { buyer: { select: { firstName: true, lastName: true } }, seller: { select: { firstName: true, lastName: true } }, items: { include: { product: true, listing: true } }, shipment: true, assignments: { include: { logistics: { include: { user: true } } } }, participantCodes: true, payment: true, statusHistory: true },
     orderBy: { createdAt: "desc" },
   });
-  const orders = await Promise.all(raw.map(o => expireOrderIfNeeded(o.id)));
-  res.json({ orders });
+  await Promise.all(raw.map(o => expireOrderIfNeeded(o.id)));
+  const orders = await prisma.order.findMany({
+    where: { OR: [{ buyerId: req.userId! }, { sellerId: req.userId! }] },
+    include: { buyer: { select: { firstName: true, lastName: true, location: true } }, seller: { select: { firstName: true, lastName: true, location: true } }, items: { include: { product: true, listing: true } }, shipment: true, assignments: { include: { logistics: { include: { user: true } } } }, participantCodes: true, payment: true, statusHistory: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const safeOrders = orders.map((o:any) => {
+    const viewerIsBuyer = o.buyerId === req.userId;
+    return { ...o, buyer: o.buyer ? { ...o.buyer, location: viewerIsBuyer ? undefined : broadRegion(o.buyer.location) } : o.buyer, seller: o.seller ? { ...o.seller, location: viewerIsBuyer ? broadRegion(o.seller.location) : undefined } : o.seller, buyerLocation: viewerIsBuyer ? o.buyer?.location : broadRegion(o.buyer?.location), sellerLocation: viewerIsBuyer ? broadRegion(o.seller?.location) : o.seller?.location, shipment: o.shipment ? { ...o.shipment, pickupLocation: viewerIsBuyer ? broadRegion(o.shipment.pickupLocation) : o.shipment.pickupLocation, deliveryLocation: viewerIsBuyer ? o.shipment.deliveryLocation : broadRegion(o.shipment.deliveryLocation) } : o.shipment };
+  });
+  res.json({ orders: safeOrders });
 });
 
 const createSchema = z.object({
@@ -44,7 +59,11 @@ router.post("/", async (req: AuthRequest, res) => {
   if (p.data.sellerId === req.userId) return res.status(400).json({ error: "Buyer and farmer must be different users" });
 
   const totalItem = p.data.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const fee = logisticsFee(p.data.distanceKm);
+  const participants = await prisma.user.findMany({ where: { id: { in: [req.userId!, p.data.sellerId] } }, select: { id: true, latitude: true, longitude: true, location: true } });
+  const buyer = participants.find(x => x.id === req.userId);
+  const seller = participants.find(x => x.id === p.data.sellerId);
+  const serverDistance = buyer?.latitude != null && buyer.longitude != null && seller?.latitude != null && seller.longitude != null ? distanceKm(buyer.latitude,buyer.longitude,seller.latitude,seller.longitude) : Math.max(0,p.data.distanceKm);
+  const fee = logisticsFee(serverDistance);
   const platform = totalItem * 0.05;
   const expires = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -56,7 +75,7 @@ router.post("/", async (req: AuthRequest, res) => {
         platformFee: platform, logisticsFee: fee, total: totalItem + platform + fee,
         items: { create: [] },
         payment: { create: { amount: totalItem + platform + fee, status: "PENDING", expiresAt: expires } },
-        shipment: { create: { status: "CONFIRMED", pickupLocation: p.data.pickupLocation, deliveryLocation: p.data.deliveryLocation, distanceKm: p.data.distanceKm } },
+        shipment: { create: { status: "CONFIRMED", pickupLocation: seller?.location, deliveryLocation: buyer?.location, distanceKm: serverDistance } },
         statusHistory: { create: { toStatus: "CONFIRMED" } },
       } });
       for (const item of p.data.items) {
@@ -93,9 +112,14 @@ router.post("/:id/pay", async (req: AuthRequest, res) => {
     const existingIds = new Set(existing.map(x => x.logisticsId));
     const quantity = (await tx.orderItem.findMany({ where: { orderId: order.id } })).reduce((s, i) => s + i.quantity, 0);
     for (const l of logistics) if (!existingIds.has(l.id) && l.availableCapacity >= quantity) await tx.logisticsAssignment.create({ data: { orderId: order.id, logisticsId: l.id, fee: order.logisticsFee } });
+    const existingCodes = await tx.participantCode.findMany({ where: { orderId: order.id } });
+    const roles = new Set(existingCodes.map(c => c.role));
+    if (!roles.has("BUYER")) await tx.participantCode.create({ data: { orderId: order.id, userId: order.buyerId, role: "BUYER", code: verificationCode() } });
+    if (!roles.has("FARMER")) await tx.participantCode.create({ data: { orderId: order.id, userId: order.sellerId, role: "FARMER", code: verificationCode() } });
     return updated;
   });
   await notify(order.sellerId, "PAYMENT", "Payment received", `Payment for order ${order.id} is complete.`, "FARMER");
+  await notify(order.buyerId, "PAYMENT", "Payment successful", `Payment for order ${order.id} is complete.`, "BUYER");
   res.json({ order: paid, message: "Demo payment successful. Logistics search started." });
 });
 
