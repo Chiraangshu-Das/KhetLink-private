@@ -8,7 +8,7 @@ const router = Router();
 router.use(requireAuth);
 const paramId = (req: AuthRequest) => typeof req.params.id === "string" ? req.params.id : null;
 const item = z.object({ productId:z.string(), quantity:z.number().positive(), unit:z.string(), minPrice:z.number().nonnegative(), maxPrice:z.number().positive(), requiredBy:z.string().datetime().optional(), location:z.string().optional() });
-const create = z.object({ location:z.string().optional(), latitude:z.number().nullable().optional(), longitude:z.number().nullable().optional(), items:z.array(item).min(1) });
+const create = z.object({ location:z.string().optional(), latitude:z.number().nullable().optional(), longitude:z.number().nullable().optional(), browse:z.boolean().optional(), items:z.array(item).min(1) });
 const broadRegion=(location?:string|null)=>{const p=String(location||"").split(",").map(x=>x.trim()).filter(Boolean);return p.length>=2?`${p[p.length-2]}, ${p[p.length-1]}`:(p[0]||"Location not shared")};
 const distanceKm=(lat1:number,lon1:number,lat2:number,lon2:number)=>{const r=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return Math.round(r*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))*10)/10};
 const fromKg=(quantity:number,unit:string)=>unit==="ton"?quantity/1000:unit==="dozen"?quantity/12:quantity;
@@ -30,7 +30,7 @@ async function createOrderFromAcceptedOffer(offerId:string){
     const distance=buyer?.latitude!=null&&buyer.longitude!=null&&farmer?.latitude!=null&&farmer.longitude!=null?distanceKm(buyer.latitude,buyer.longitude,farmer.latitude,farmer.longitude):0;
     const fee=logisticsFee(distance),platform=subtotal*0.05,expires=new Date(Date.now()+3600000),total=subtotal+platform+fee;
     const order=await tx.order.create({data:{buyerId:offer.requirement.buyerId,sellerId:offer.farmerId,requirementId:offer.requirementId,status:"CONFIRMED",paymentStatus:"PENDING",paymentExpiresAt:expires,platformFee:platform,logisticsFee:fee,total,items:{create:rows},payment:{create:{amount:total,status:"PENDING",expiresAt:expires}},shipment:{create:{status:"CONFIRMED",pickupLocation:farmer?.location,deliveryLocation:buyer?.location,distanceKm:distance}},statusHistory:{create:{toStatus:"CONFIRMED"}}}});
-    await tx.requirement.update({where:{id:offer.requirementId},data:{status:"CONFIRMED"}}); return order;
+    if(offer.requirement.status !== "BROWSE_PRODUCTS") await tx.requirement.update({where:{id:offer.requirementId},data:{status:"CONFIRMED"}}); return order;
   });
 }
 
@@ -42,7 +42,9 @@ router.get("/",async(req:AuthRequest,res)=>{
 
 router.post("/",async(req:AuthRequest,res)=>{
   const p=create.safeParse(req.body);if(!p.success)return res.status(400).json({error:"Invalid requirement",details:p.error.flatten()});
-  const r=await prisma.$transaction(tx=>tx.requirement.create({data:{buyerId:req.userId!,location:p.data.location,latitude:p.data.latitude,longitude:p.data.longitude,status:"PENDING",items:{create:p.data.items.map(i=>({...i,requiredBy:i.requiredBy?new Date(i.requiredBy):undefined}))}}}));
+  const browse=!!p.data.browse;
+  const r=await prisma.$transaction(tx=>tx.requirement.create({data:{buyerId:req.userId!,location:p.data.location,latitude:p.data.latitude,longitude:p.data.longitude,status:browse?"BROWSE_PRODUCTS":"PENDING",items:{create:p.data.items.map(i=>({...i,requiredBy:i.requiredBy?new Date(i.requiredBy):undefined}))}}}));
+  if(browse) return res.status(201).json({requirementId:r.id,matchedFarmers:[],status:"BROWSE_PRODUCTS"});
   const matched=await matchRequirement(r.id);if(!matched.length)await prisma.requirement.update({where:{id:r.id},data:{status:"NOT_FOUND"}});for(const farmerId of matched)await notify(farmerId,"REQUEST","New buyer request",`A new KhetLink procurement request ${r.id} is waiting for your response.` ,"FARMER");
   return res.status(201).json({requirementId:r.id,matchedFarmers:matched,status:matched.length?"PENDING":"NOT_FOUND"});
 });
@@ -62,6 +64,6 @@ router.post("/:id/farmer-response",async(req:AuthRequest,res)=>{const id=paramId
 
 router.post("/:id/close",async(req:AuthRequest,res)=>{const id=paramId(req);if(!id)return res.status(400).json({error:"Invalid requirement id"});const requirement=await prisma.requirement.findFirst({where:{id,buyerId:req.userId!}});if(!requirement)return res.status(404).json({error:"Requirement not found"});return res.json({requirement:await prisma.requirement.update({where:{id},data:{status:"CLOSED"}})});});
 
-router.get("/incoming",async(req:AuthRequest,res)=>{const farmer=await prisma.userRole.findUnique({where:{userId_role:{userId:req.userId!,role:"FARMER"}}});if(!farmer)return res.status(403).json({error:"Farmer role required"});const listings=await prisma.listing.findMany({where:{farmerId:req.userId!,status:"Active"},select:{productId:true}});const productIds=listings.map(x=>x.productId);const requirements=await prisma.requirement.findMany({where:{status:"PENDING",items:{some:{productId:{in:productIds}}},offers:{none:{farmerId:req.userId!,status:"REJECTED"}},orders:{none:{sellerId:req.userId!}}},orderBy:{createdAt:"desc"}});const result=[];for(const r of requirements){const items=await prisma.requirementItem.findMany({where:{requirementId:r.id},include:{product:true}});const buyer=await prisma.user.findUnique({where:{id:r.buyerId},select:{id:true,location:true}});result.push({...r,items,buyer,location:broadRegion(r.location||buyer?.location)});}return res.json({requirements:result});});
+router.get("/incoming",async(req:AuthRequest,res)=>{const farmer=await prisma.userRole.findUnique({where:{userId_role:{userId:req.userId!,role:"FARMER"}}});if(!farmer)return res.status(403).json({error:"Farmer role required"});const listings=await prisma.listing.findMany({where:{farmerId:req.userId!,status:"Active"},select:{productId:true}});const productIds=listings.map(x=>x.productId);const requirements=await prisma.requirement.findMany({where:{status:{in:["PENDING","BROWSE_PRODUCTS"]},items:{some:{productId:{in:productIds}}},offers:{none:{farmerId:req.userId!,status:"REJECTED"}},orders:{none:{sellerId:req.userId!}}},orderBy:{createdAt:"desc"}});const result=[];for(const r of requirements){const items=await prisma.requirementItem.findMany({where:{requirementId:r.id},include:{product:true}});const buyer=await prisma.user.findUnique({where:{id:r.buyerId},select:{id:true,location:true}});result.push({...r,items,buyer,location:broadRegion(r.location||buyer?.location)});}return res.json({requirements:result});});
 
 export default router;

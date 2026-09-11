@@ -4,7 +4,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  useRef,
   type ChangeEvent,
   type ReactNode,
 } from "react";
@@ -112,10 +111,12 @@ type RequirementUnit = "kg" | "L" | "ton" | "dozen";
 
 interface FarmerListing {
   id: string;
+  productId: string;
+  category?: string;
   produce: string;
   availableQuantity: number;
   pricePerKg: number;
-  unit: "kg";
+  unit: RequirementUnit;
 }
 
 interface Farmer {
@@ -136,6 +137,7 @@ interface Farmer {
 interface Product {
   id: string;
   listingId: string;
+  productId: string;
   farmerId: string;
   farmerName: string;
   name: string;
@@ -162,6 +164,7 @@ interface CartItem {
 
 interface RequirementItem {
   id: string;
+  productId?: string;
   produce: string;
   quantity: number;
   unit?: RequirementUnit;
@@ -177,6 +180,7 @@ interface Requirement {
   createdAt: string;
   status: RequirementStatus;
   items: RequirementItem[];
+  matchedFarmerIds?: string[];
 }
 
 interface FarmerOffer {
@@ -209,6 +213,16 @@ interface Order {
   deliveryDate: string;
   status: OrderStatus;
   createdAt: string;
+  paymentStatus?: string;
+  paymentExpiresAt?: string;
+  shipmentStatus?: string;
+  pickupLocation?: string;
+  deliveryLocation?: string;
+  distanceKm?: number;
+  etaMinutes?: number;
+  currentLocation?: string;
+  logisticsName?: string;
+  logisticsRating?: number;
 }
 
 interface FarmerReview {
@@ -230,6 +244,14 @@ interface Notification {
   createdAt: string;
 }
 
+interface SupportTicket {
+  id: string;
+  subject: string;
+  message: string;
+  status?: string;
+  createdAt: string;
+}
+
 interface BuyerSession {
   username: string;
   phoneNumber: string;
@@ -238,166 +260,10 @@ interface BuyerSession {
   email?: string;
   company?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   language?: string;
 }
-
-/* =========================================================
-   MOCK DATA
-   ---------------------------------------------------------
-   Replace these arrays with API responses later.
-========================================================= */
-
-const MOCK_BUYER: BuyerSession = {
-  username: "KhetLink Buyer",
-  phoneNumber: "+91 98765 43210",
-  buyerId: "BUY-2026-0001",
-  company: "KhetLink Buyer",
-  language: "English",
-};
-
-const MOCK_FARMERS: Farmer[] = [
-  {
-    id: "FAR-1001",
-    name: "Rajesh Kumar",
-    phoneNumber: "+91 98765 11001",
-    location: "Nashik, Maharashtra",
-    distanceKm: 14,
-    rating: 0,
-    reviews: 0,
-    verified: true,
-    avatar: "RK",
-    farm: "Kumar Fresh Farms",
-    about:
-      "Family-owned farm supplying fresh vegetables directly to local buyers.",
-    listings: [
-      {
-        id: "L-1001",
-        produce: "Tomato",
-        availableQuantity: 250,
-        pricePerKg: 32,
-        unit: "kg",
-      },
-      {
-        id: "L-1002",
-        produce: "Potato",
-        availableQuantity: 180,
-        pricePerKg: 28,
-        unit: "kg",
-      },
-      {
-        id: "L-1003",
-        produce: "Onion",
-        availableQuantity: 300,
-        pricePerKg: 30,
-        unit: "kg",
-      },
-    ],
-  },
-  {
-    id: "FAR-1002",
-    name: "Suresh Patil",
-    phoneNumber: "+91 98765 11002",
-    location: "Pune, Maharashtra",
-    distanceKm: 38,
-    rating: 0,
-    reviews: 0,
-    verified: true,
-    avatar: "SP",
-    farm: "Patil Agro Farm",
-    about:
-      "Produces seasonal vegetables and maintains direct supply relationships.",
-    listings: [
-      {
-        id: "L-2001",
-        produce: "Potato",
-        availableQuantity: 500,
-        pricePerKg: 25,
-        unit: "kg",
-      },
-      {
-        id: "L-2002",
-        produce: "Tomato",
-        availableQuantity: 120,
-        pricePerKg: 35,
-        unit: "kg",
-      },
-      {
-        id: "L-2003",
-        produce: "Carrot",
-        availableQuantity: 160,
-        pricePerKg: 42,
-        unit: "kg",
-      },
-    ],
-  },
-  {
-    id: "FAR-1003",
-    name: "Anita Sharma",
-    phoneNumber: "+91 98765 11003",
-    location: "Ahmednagar, Maharashtra",
-    distanceKm: 61,
-    rating: 0,
-    reviews: 0,
-    verified: true,
-    avatar: "AS",
-    farm: "Sharma Organic Fields",
-    about:
-      "Organic produce supplier focusing on quality-controlled vegetables.",
-    listings: [
-      {
-        id: "L-3001",
-        produce: "Onion",
-        availableQuantity: 420,
-        pricePerKg: 27,
-        unit: "kg",
-      },
-      {
-        id: "L-3002",
-        produce: "Tomato",
-        availableQuantity: 200,
-        pricePerKg: 31,
-        unit: "kg",
-      },
-      {
-        id: "L-3003",
-        produce: "Spinach",
-        availableQuantity: 90,
-        pricePerKg: 24,
-        unit: "kg",
-      },
-    ],
-  },
-  {
-    id: "FAR-1004",
-    name: "Vijay More",
-    phoneNumber: "+91 98765 11004",
-    location: "Satara, Maharashtra",
-    distanceKm: 74,
-    rating: 0,
-    reviews: 0,
-    verified: false,
-    avatar: "VM",
-    farm: "More Vegetable Farm",
-    about:
-      "Small and medium-scale vegetable producer serving nearby markets.",
-    listings: [
-      {
-        id: "L-4001",
-        produce: "Cabbage",
-        availableQuantity: 220,
-        pricePerKg: 22,
-        unit: "kg",
-      },
-      {
-        id: "L-4002",
-        produce: "Potato",
-        availableQuantity: 260,
-        pricePerKg: 29,
-        unit: "kg",
-      },
-    ],
-  },
-];
 
 /* =========================================================
    UTILITY FUNCTIONS
@@ -409,7 +275,7 @@ const formatCurrency = (value: number) =>
 const toKg = (quantity: number, unit: RequirementUnit = "kg") => {
   if (unit === "ton") return quantity * 1000;
   if (unit === "dozen") return quantity * 12;
-  // For liquid listings, keep 1 L as the working 1 kg equivalent in this mock catalog.
+  // For liquid listings, keep 1 L as the working 1 kg equivalent in this backend catalog.
   if (unit === "L") return quantity;
   return quantity;
 };
@@ -695,7 +561,9 @@ export default function Buyer() {
   useState<View>("Dashboard");
 
   const [session, setSession] =
-    useState<BuyerSession>(MOCK_BUYER);
+    useState<BuyerSession>({
+      username: "", phoneNumber: "", buyerId: "", language: "English",
+    });
 
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
@@ -724,6 +592,12 @@ export default function Buyer() {
   const [notifications, setNotifications] =
     useState<Notification[]>([]);
 
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [support, setSupport] = useState({ subject: "", message: "" });
+
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
   const [toast, setToast] =
     useState<string | null>(null);
 
@@ -749,54 +623,116 @@ export default function Buyer() {
     useState("");
 
   /* -------------------------------------------------------
-     INITIAL MOCK STATE
+     BACKEND DATA
   ------------------------------------------------------- */
 
+  const API = async (path: string, init?: RequestInit) => {
+    const response = await fetch(path, {
+      ...init, credentials: "include",
+      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload?.error ?? `Request failed (${response.status})`);
+    return payload;
+  };
+
+  const mapStatus = (status: string): OfferStatus => ({
+    OFFERED: "Requested", COUNTERED: "Negotiating", NEGOTIATING: "Negotiating",
+    ACCEPTED: "Accepted", REJECTED: "Rejected",
+  }[status] as OfferStatus ?? "Requested");
+
+  const mapOrderStatus = (status: string): OrderStatus => ({
+    PROCESSING: "Processing", IN_TRANSIT: "In Transit", DELIVERED: "Delivered",
+    CANCELLED: "Pending", CONFIRMED: "Confirmed",
+  }[status] as OrderStatus ?? "Confirmed");
+
+  const loadBuyerData = async (silent = false) => {
+    if (!silent) setDataLoading(true);
+    try {
+      const [profileData, listingData, requirementData, orderData, notificationData, supportData] =
+        await Promise.all([API("/api/profile/me"), API("/api/listings"), API("/api/requirements"), API("/api/orders"), API("/api/notifications?role=BUYER"), API("/api/support")]);
+
+      const user = profileData.user;
+      const buyerRole = (user.roles ?? []).find((r: any) => r.role === "BUYER");
+      setSession({
+        username: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Buyer",
+        phoneNumber: user.phone ?? "", buyerId: buyerRole?.roleCode ?? user.id,
+        profileImage: user.profileImage ?? undefined, email: user.email ?? undefined,
+        company: user.buyer?.company ?? undefined, location: user.location ?? undefined,
+        latitude: user.latitude ?? null, longitude: user.longitude ?? null,
+        language: user.language ?? "English",
+      });
+
+      const farmerMap = new Map<string, Farmer>();
+      for (const row of listingData.listings ?? []) {
+        const f = row.farmer; if (!f) continue;
+        let farmer = farmerMap.get(f.id);
+        if (!farmer) {
+          farmer = { id: f.id, name: `${f.firstName ?? ""} ${f.lastName ?? ""}`.trim() || "Farmer",
+            phoneNumber: "", location: f.location ?? "Location not shared", distanceKm: Number(row.distanceKm ?? 0),
+            rating: Number(f.rating ?? 0), reviews: Number(f.reviews ?? 0), verified: !!f.farmer?.verified,
+            avatar: f.profileImage ?? `${f.firstName?.[0] ?? ""}${f.lastName?.[0] ?? ""}`,
+            farm: f.farmer?.farmName ?? "Farm", about: "", listings: [] };
+          farmerMap.set(f.id, farmer);
+        }
+        farmer.distanceKm = row.distanceKm ?? farmer.distanceKm;
+        farmer.listings.push({ id: row.id, productId: row.product?.id ?? row.productId, category: row.product?.category?.name, produce: row.product?.name ?? "Product",
+          availableQuantity: Number(row.quantity ?? 0), pricePerKg: Number(row.price ?? 0), unit: (row.unit === "ton" || row.unit === "dozen" || row.unit === "L" ? row.unit : "kg") as RequirementUnit });
+      }
+      const nextFarmers = [...farmerMap.values()];
+      setFarmers(nextFarmers);
+
+      const listingById = new Map<string, any>((listingData.listings ?? []).map((l: any) => [l.id, l]));
+      const reviewRows: FarmerReview[] = [];
+      for (const row of listingData.listings ?? []) for (const review of row.reviewDetails ?? []) {
+        if (!reviewRows.some(x => x.id === review.id)) reviewRows.push({ id: review.id, farmerId: row.farmerId,
+          orderId: review.orderId, buyerName: review.reviewerName ?? "Buyer", rating: Number(review.rating),
+          comment: review.comment ?? "", createdAt: review.createdAt });
+      }
+      setFarmerReviews(reviewRows);
+
+      const backendRequirements: Requirement[] = (requirementData.requirements ?? []).filter((r: any) => r.status !== "BROWSE_PRODUCTS").map((r: any) => ({
+        id: r.id, buyerId: r.buyerId, createdAt: r.createdAt,
+        status: ({BROWSE_PRODUCTS:"Draft",PENDING:"Pending",NOT_FOUND:"Not Found",CONFIRMED:"Confirmed",CLOSED:"Closed"} as Record<string, RequirementStatus>)[r.status] ?? "Pending",
+        matchedFarmerIds: r.matchedFarmerIds ?? [],
+        items: (r.items ?? []).map((i: any) => ({ id:i.id, productId:i.productId, produce:i.product?.name ?? "Product", quantity:Number(i.quantity),
+          unit:i.unit as RequirementUnit, minPrice:Number(i.minPrice), maxPrice:Number(i.maxPrice), requiredBy:i.requiredBy ?? futureDate(7), location:i.location ?? r.location ?? "" }))
+      }));
+      setRequirements(current => [...current.filter(r => r.status === "Draft"), ...backendRequirements]);
+
+      const mappedOffers: FarmerOffer[] = [];
+      for (const r of requirementData.requirements ?? []) for (const o of r.offers ?? []) {
+        const firstItem = (o.items ?? [])[0]; const listing = firstItem ? listingById.get(firstItem.listingId) : undefined;
+        mappedOffers.push({ id:o.id, requirementId:o.requirementId, farmerId:o.farmerId, selectedListingIds:(o.items ?? []).map((x:any)=>x.listingId),
+          selectedQuantities:Object.fromEntries((o.items ?? []).map((x:any)=>[x.listingId,Number(x.quantity)])), productId:listing?.productId,
+          requestedQuantity:firstItem?.quantity, requestedUnit:((r.items ?? []).find((i:any)=>i.productId===listing?.productId)?.unit ?? firstItem?.unit) as RequirementUnit|undefined, originalPrice:o.originalPrice == null ? undefined : Number(o.originalPrice) * toKg(1, (((r.items ?? []).find((i:any)=>i.productId===listing?.productId)?.unit ?? firstItem?.unit) as RequirementUnit|undefined) ?? "kg"),
+          offeredPrice:Number(o.offeredPrice) * toKg(1, ((((r.items ?? []).find((i:any)=>i.productId===listing?.productId)?.unit ?? firstItem?.unit) as RequirementUnit|undefined) ?? "kg")), buyerConfirmed:!!o.buyerConfirmed, farmerConfirmed:!!o.farmerConfirmed, status:mapStatus(o.status) });
+      }
+      setOffers(mappedOffers);
+
+      setOrders((orderData.orders ?? []).map((o:any) => { const first=o.items?.[0]; return {
+        id:o.id,type:"Marketplace",product:first?.product?.name ?? "Order",quantity:Number(first?.quantity ?? 0),unit:"kg",cost:Number(o.total ?? 0),
+        seller:`${o.seller?.firstName ?? ""} ${o.seller?.lastName ?? ""}`.trim() || "Farmer",sellerId:o.sellerId,
+        buyer:`${o.buyer?.firstName ?? ""} ${o.buyer?.lastName ?? ""}`.trim() || "Buyer",buyerId:o.buyerId,deliveryDate:o.createdAt,
+        status:mapOrderStatus(o.status),createdAt:o.createdAt,paymentStatus:o.paymentStatus,paymentExpiresAt:o.paymentExpiresAt,
+        shipmentStatus:o.shipment?.status,pickupLocation:o.shipment?.pickupLocation,deliveryLocation:o.shipment?.deliveryLocation,distanceKm:o.shipment?.distanceKm,etaMinutes:o.shipment?.etaMinutes,currentLocation:o.shipment?.currentLocation,
+        logisticsName:o.assignments?.find((a:any)=>a.status==="ACCEPTED")?.logistics?.user ? `${o.assignments.find((a:any)=>a.status==="ACCEPTED").logistics.user.firstName} ${o.assignments.find((a:any)=>a.status==="ACCEPTED").logistics.user.lastName}`.trim() : undefined,
+        logisticsRating:o.assignments?.find((a:any)=>a.status==="ACCEPTED")?.logistics?.rating }; }));
+
+      setNotifications((notificationData.notifications ?? []).map((n:any) => ({ id:n.id,title:n.title,message:n.message,
+        type:n.type === "SHIPMENT" ? "shipment" : n.type === "SYSTEM" ? "system" : "order",read:!!n.read,createdAt:n.createdAt })));
+      setTickets((supportData.tickets ?? []).map((t:any) => ({ id:t.id, subject:t.subject, message:t.message, status:t.status, createdAt:t.createdAt })));
+    } catch (error) {
+      console.error("Buyer data load failed:", error);
+      showToast(error instanceof Error ? error.message : "Unable to load Buyer data.");
+    } finally { setDataLoading(false); }
+  };
+
   useEffect(() => {
-    const storedSession =
-      window.localStorage.getItem(
-        "khetlink-mock-buyer",
-      );
-
-    if (storedSession) {
-      try {
-        setSession(
-          JSON.parse(storedSession) as BuyerSession,
-        );
-      } catch {
-        // Keep mock session.
-      }
-    }
-
-    const storedCart =
-      window.localStorage.getItem(
-        "khetlink-buyer-cart",
-      );
-
-    if (storedCart) {
-      try {
-        setCart(
-          JSON.parse(storedCart) as CartItem[],
-        );
-      } catch {
-        // Ignore malformed local data.
-      }
-    }
+    void loadBuyerData();
+    const timer = window.setInterval(() => void loadBuyerData(true), 5000);
+    return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      "khetlink-mock-buyer",
-      JSON.stringify(session),
-    );
-  }, [session]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      "khetlink-buyer-cart",
-      JSON.stringify(cart),
-    );
-  }, [cart]);
 
   useEffect(() => {
     if (!toast) return;
@@ -814,38 +750,14 @@ export default function Buyer() {
      DERIVED PRODUCT CATALOG
   ------------------------------------------------------- */
 
-  const products = useMemo<Product[]>(() => {
-    const base = MOCK_FARMERS.flatMap((farmer) =>
-      farmer.listings.map((listing) => ({
-        id: `P-${listing.id}`,
-        listingId: listing.id,
-        farmerId: farmer.id,
-        farmerName: farmer.name,
-        name: listing.produce,
-        category: "Vegetables",
-        quantityAvailable:
-          listing.availableQuantity,
-        pricePerKg: listing.pricePerKg,
-        rating: farmer.rating,
-        reviews: farmer.reviews,
-        deliveryTime: "1–2 days",
-        image: getProductImage(listing.produce),
-      })),
-    );
-
-    const fruits: Product[] = [
-      { id: "P-FR-1", listingId: "FR-1", farmerId: "FAR-1001", farmerName: "Rajesh Kumar", name: "Mango", category: "Fruits", quantityAvailable: 180, pricePerKg: 95, rating: 0, reviews: 0, deliveryTime: "1–2 days", image: getProductImage("Mango") },
-      { id: "P-FR-2", listingId: "FR-2", farmerId: "FAR-1002", farmerName: "Suresh Patil", name: "Banana", category: "Fruits", quantityAvailable: 320, pricePerKg: 48, rating: 0, reviews: 0, deliveryTime: "1 day", image: getProductImage("Banana") },
-      { id: "P-FR-3", listingId: "FR-3", farmerId: "FAR-1003", farmerName: "Anita Sharma", name: "Apple", category: "Fruits", quantityAvailable: 140, pricePerKg: 125, rating: 0, reviews: 0, deliveryTime: "2–3 days", image: getProductImage("Apple") },
-      { id: "P-FR-4", listingId: "FR-4", farmerId: "FAR-1004", farmerName: "Vijay More", name: "Orange", category: "Fruits", quantityAvailable: 220, pricePerKg: 68, rating: 0, reviews: 0, deliveryTime: "1–2 days", image: getProductImage("Orange") },
-      { id: "P-FR-5", listingId: "FR-5", farmerId: "FAR-1003", farmerName: "Anita Sharma", name: "Grapes", category: "Fruits", quantityAvailable: 110, pricePerKg: 82, rating: 0, reviews: 0, deliveryTime: "2 days", image: getProductImage("Grapes") },
-    ];
-
-    return [...base, ...fruits];
-  }, []);
+  const products = useMemo<Product[]>(() => farmers.flatMap((farmer) =>
+    farmer.listings.map((listing) => ({ id:listing.id, listingId:listing.id, productId:listing.productId, farmerId:farmer.id, farmerName:farmer.name,
+      name:listing.produce, category:listing.category ?? "Other", quantityAvailable:listing.availableQuantity, pricePerKg:listing.pricePerKg,
+      rating:farmer.rating, reviews:farmer.reviews, deliveryTime:"Based on backend logistics", image:getProductImage(listing.produce) }))
+  ), [farmers]);
 
   const categories = useMemo(() => {
-    return ["All", "Vegetables", "Fruits", "Herbs", "Organic"];
+    return ["All", ...Array.from(new Set(products.map(product => product.category).filter(Boolean)))];
   }, [products]);
 
   /* -------------------------------------------------------
@@ -856,22 +768,6 @@ export default function Buyer() {
     (notification) => !notification.read,
   ).length;
 
-  const pushNotification = (
-    input: Omit<
-      Notification,
-      "id" | "createdAt" | "read"
-    >,
-  ) => {
-    setNotifications((current) => [
-      {
-        ...input,
-        id: createId("NOT"),
-        createdAt: new Date().toISOString(),
-        read: false,
-      },
-      ...current,
-    ]);
-  };
 
   /* -------------------------------------------------------
      NAVIGATION
@@ -918,43 +814,6 @@ export default function Buyer() {
     };
   }, []);
 
-  const processedConfirmedOrders = useRef<Set<string>>(new Set());
-
-useEffect(() => {
-  const newConfirmedOrders = orders.filter(
-    (order) =>
-      order.status === "Confirmed" &&
-      !processedConfirmedOrders.current.has(order.id),
-  );
-
-  if (newConfirmedOrders.length === 0) return;
-
-  const timers = newConfirmedOrders.map((order) => {
-    // Mark it immediately so this order can NEVER be scheduled twice.
-    processedConfirmedOrders.current.add(order.id);
-
-    const delay = 2000 + Math.floor(Math.random() * 5000);
-
-    return window.setTimeout(() => {
-      const next =
-        ["Confirmed", "Processing", "In Transit", "Delivered"][
-          Math.floor(Math.random() * 4)
-        ] as OrderStatus;
-
-      setOrders((current) =>
-        current.map((item) =>
-          item.id === order.id && item.status === "Confirmed"
-            ? { ...item, status: next }
-            : item,
-        ),
-      );
-    }, delay);
-  });
-
-  return () => {
-    timers.forEach((timer) => window.clearTimeout(timer));
-  };
-}, [orders]);
 
   /* -------------------------------------------------------
      CART
@@ -1059,50 +918,17 @@ useEffect(() => {
     );
   }, [cart]);
 
-  const purchaseCart = () => {
-    if (cart.length === 0) {
-      showToast("Your cart is empty.");
-      return;
-    }
-
-    const newOrders: Order[] = cart.map(
-      (item, index) => ({
-        id: `MKT-${Date.now()}-${index + 1}`,
-        type: "Marketplace",
-        product: item.product,
-        quantity: item.quantity,
-        unit: "kg",
-        cost:
-          item.quantity * item.pricePerKg,
-        seller: item.farmerName,
-        sellerId: item.farmerId,
-        buyer: session.username,
-        buyerId: session.buyerId,
-        deliveryDate: futureDate(2),
-        status: "Confirmed",
-        createdAt:
-          new Date().toISOString(),
-      }),
-    );
-
-    setOrders((current) => [
-      ...newOrders,
-      ...current,
-    ]);
-
-    newOrders.forEach((order) => {
-      pushNotification({
-        title: "Purchase confirmed",
-        message: `${order.product} purchase from ${order.seller} was confirmed.`,
-        type: "order",
-      });
-    });
-
-    setCart([]);
-
-    showToast(
-      "Purchase successful. Your orders are confirmed.",
-    );
+  const purchaseCart = async () => {
+    if (!cart.length) { showToast("Your cart is empty."); return; }
+    try {
+      const created: Order[] = [];
+      for (const item of cart) {
+        const product = products.find(p => p.id === item.productId); if (!product) continue;
+        const payload = await API("/api/orders", { method:"POST", body:JSON.stringify({ sellerId:item.farmerId, items:[{ productId:product.productId, listingId:product.listingId, quantity:item.quantity, unit:"kg", unitPrice:item.pricePerKg }] }) });
+        const o=payload.order; if(o) created.push({id:o.id,type:"Marketplace",product:product.name,quantity:item.quantity,unit:"kg",cost:Number(o.total ?? item.quantity*item.pricePerKg),seller:item.farmerName,sellerId:item.farmerId,buyer:session.username,buyerId:session.buyerId,deliveryDate:o.createdAt,status:"Confirmed",createdAt:o.createdAt});
+      }
+      setOrders(current=>[...created,...current]); setCart([]); showToast(created.length?"Purchase successful. Your orders are confirmed.":"No order could be created."); if(created.length)void loadBuyerData();
+    } catch(error){showToast(error instanceof Error?error.message:"Unable to create order.");}
   };
 
   /* -------------------------------------------------------
@@ -1287,96 +1113,26 @@ useEffect(() => {
     showToast("Requirement item removed.");
   };
 
-  const submitRequirement = (
-    requirementId: string,
-  ) => {
-    const requirement =
-      requirements.find(
-        (item) => item.id === requirementId,
-      );
-
-    if (
-      !requirement ||
-      requirement.items.length === 0
-    ) {
-      showToast(
-        "Add at least one requirement.",
-      );
-      return;
-    }
-
-    setRequirements((current) =>
-      current.map((item) =>
-        item.id === requirementId
-          ? {
-              ...item,
-              status: "Searching",
-            }
-          : item,
-      ),
-    );
-
-    /*
-     * Mock search:
-     * A farmer qualifies when they have at least
-     * one listing whose produce matches and whose
-     * available quantity meets the requirement.
-     *
-     * The backend can later implement this same
-     * rule with a database query.
-     */
-    const matchedFarmers =
-      MOCK_FARMERS.filter((farmer) =>
-        farmer.listings.some((listing) =>
-          requirement.items.some(
-            (item) =>
-              listing.produce.toLowerCase() ===
-                item.produce.toLowerCase() &&
-              listing.availableQuantity >=
-                toKg(item.quantity, item.unit),
-          ),
-        ),
-      );
-
-    setRequirements((current) =>
-      current.map((item) =>
-        item.id === requirementId
-          ? {
-              ...item,
-              status:
-                matchedFarmers.length > 0
-                  ? "Matched"
-                  : "Not Found",
-            }
-          : item,
-      ),
-    );
-    if (matchedFarmers.length === 0) {
-  window.setTimeout(() => {
-    dismissRequirement(requirementId);
-  }, 3000);
-}
-    showToast(
-      matchedFarmers.length > 0
-        ? `${matchedFarmers.length} matching farmers found.`
-        : "No farmers currently match your requirements.",
-    );
+  const submitRequirement = async (requirementId:string) => {
+    const requirement=requirements.find(x=>x.id===requirementId); if(!requirement?.items.length){showToast("Add at least one requirement.");return;}
+    try {
+      const catalog=await API("/api/catalog"); const byName=new Map<string,any>((catalog??[]).map((x:any)=>[x.name.toLowerCase(),x]));
+      const items=requirement.items.map(i=>({productId:i.productId??byName.get(i.produce.toLowerCase())?.id,quantity:i.quantity,unit:i.unit??"kg",minPrice:i.minPrice,maxPrice:i.maxPrice,requiredBy:i.requiredBy?new Date(i.requiredBy).toISOString():undefined,location:i.location}));
+      if(items.some(x=>!x.productId)){showToast("A requested product is not in the backend catalog.");return;}
+      const result=await API("/api/requirements",{method:"POST",body:JSON.stringify({location:requirement.items[0]?.location||session.location,items})});
+      setRequirements(current=>current.filter(x=>x.id!==requirementId)); showToast(result.status==="NOT_FOUND"?"No farmers currently match your requirements.":"Requirement submitted successfully."); void loadBuyerData();
+    }catch(error){showToast(error instanceof Error?error.message:"Unable to submit requirement.");}
   };
 
   const getEligibleListings = (
     farmer: Farmer,
     requirement: Requirement,
   ) => {
-    return farmer.listings.filter(
-      (listing) =>
-        requirement.items.some(
-          (item) =>
-            listing.produce.toLowerCase() ===
-              item.produce.toLowerCase() &&
-            listing.availableQuantity >=
-              toKg(item.quantity, item.unit),
-        ),
-    );
+    return farmer.listings.filter((listing) => requirement.items.some((item) =>
+      listing.produce.toLowerCase() === item.produce.toLowerCase() &&
+      listing.pricePerKg >= item.minPrice && listing.pricePerKg <= item.maxPrice &&
+      listing.availableQuantity > 0
+    ));
   };
 
   const [selectedListingIds, setSelectedListingIds] =
@@ -1409,463 +1165,51 @@ useEffect(() => {
     setSelectedListingQuantities((current) => ({ ...current, [farmerId]: { ...(current[farmerId] ?? {}), [listingId]: quantity } }));
   };
 
-  const sendProcurementRequest = (
-    requirement: Requirement,
-    farmer: Farmer,
-  ) => {
-    const eligible =
-      getEligibleListings(
-        farmer,
-        requirement,
-      );
-
-    const selected =
-      selectedListingIds[farmer.id] ??
-      [];
-
-    const finalListingIds =
-      selected.length > 0
-        ? selected.filter((id) =>
-            eligible.some(
-              (listing) =>
-                listing.id === id,
-            ),
-          )
-        : eligible.map(
-            (listing) => listing.id,
-          );
-
-    if (finalListingIds.length === 0) {
-      showToast(
-        "Select at least one matching produce.",
-      );
-      return;
-    }
-
-    const selectedListings =
-      farmer.listings.filter((listing) =>
-        finalListingIds.includes(
-          listing.id,
-        ),
-      );
-
-    const averagePrice =
-      selectedListings.reduce(
-        (sum, listing) =>
-          sum + listing.pricePerKg,
-        0,
-      ) /
-      Math.max(
-        selectedListings.length,
-        1,
-      );
-
-    const existingOffer =
-      offers.find(
-        (offer) =>
-          offer.requirementId ===
-            requirement.id &&
-          offer.farmerId === farmer.id,
-      );
-
-    const newOffer: FarmerOffer = {
-      id:
-        existingOffer?.id ??
-        createId("OFFER"),
-      requirementId: requirement.id,
-      farmerId: farmer.id,
-      selectedListingIds: finalListingIds,
-      selectedQuantities: Object.fromEntries(
-        finalListingIds.map((id) => {
-          const listing = farmer.listings.find((item) => item.id === id);
-          const requirementItem = requirement.items.find(
-            (item) => item.produce.toLowerCase() === listing?.produce.toLowerCase(),
-          );
-          const requestedKg = requirementItem
-            ? toKg(requirementItem.quantity, requirementItem.unit ?? "kg")
-            : listing?.availableQuantity ?? 0;
-          return [
-            id,
-            selectedListingQuantities[farmer.id]?.[id] ??
-              Math.min(requestedKg, listing?.availableQuantity ?? requestedKg),
-          ];
-        }),
-      ),
-      offeredPrice: Math.round(
-        averagePrice,
-      ),
-      originalPrice: Math.round(averagePrice),
-      buyerConfirmed: false,
-      farmerConfirmed: false,
-      status: "Requested",
-    };
-
-    setOffers((current) =>
-      existingOffer
-        ? current.map((offer) =>
-            offer.id === existingOffer.id
-              ? newOffer
-              : offer,
-          )
-        : [newOffer, ...current],
-    );
-
-    pushNotification({
-      title: "Procurement request sent",
-      message: `Your request was sent to ${farmer.name}.`,
-      type: "order",
-    });
-
-    showToast(
-      `Request sent to ${farmer.name}. Waiting for farmer response…`,
-    );
-    scheduleMarketplaceFarmerResponse(requirement.id, farmer.id, newOffer.offeredPrice, false);
+  const sendProcurementRequest = async (requirement:Requirement, farmer:Farmer) => {
+    const eligible=getEligibleListings(farmer,requirement); const selected=selectedListingIds[farmer.id]??[]; const ids=(selected.length?selected:eligible.map(l=>l.id)).filter(id=>eligible.some(l=>l.id===id));
+    if(!ids.length){showToast("Select at least one matching produce.");return;}
+    const items=ids.map(listingId=>{const l=farmer.listings.find(x=>x.id===listingId)!;const r=requirement.items.find(x=>x.produce.toLowerCase()===l.produce.toLowerCase());return{listingId,quantity:Math.min(selectedListingQuantities[farmer.id]?.[listingId]??fromKg(toKg(r?.quantity??0,r?.unit??"kg"),l.unit),l.availableQuantity)}}).filter(x=>x.quantity>0);
+    const price=Math.round(items.reduce((sum,x)=>sum+(farmer.listings.find(l=>l.id===x.listingId)?.pricePerKg??0),0)/Math.max(items.length,1));
+    try {const result=await API(`/api/requirements/${requirement.id}/offer`,{method:"POST",body:JSON.stringify({farmerId:farmer.id,offeredPrice:price,items})});const o=result.offer;setOffers(current=>[...current.filter(x=>!(x.requirementId===requirement.id&&x.farmerId===farmer.id)),{id:o.id,requirementId:o.requirementId,farmerId:o.farmerId,selectedListingIds:items.map(x=>x.listingId),selectedQuantities:Object.fromEntries(items.map(x=>[x.listingId,x.quantity])),productId:farmer.listings.find(l=>l.id===items[0]?.listingId)?.productId,offeredPrice:Number(o.offeredPrice),originalPrice:Number(o.originalPrice??o.offeredPrice),buyerConfirmed:false,farmerConfirmed:false,status:"Requested"}]);showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);void loadBuyerData();}catch(error){showToast(error instanceof Error?error.message:"Unable to send request.");}
   };
 
-  const scheduleMarketplaceFarmerResponse = (
-    requirementId: string,
-    farmerId: string,
-    buyerPrice: number,
-    allowCounter = false,
-  ) => {
-    const farmer = MOCK_FARMERS.find((item) => item.id === farmerId);
-    if (!farmer) return;
 
-    const delay = 900 + Math.floor(Math.random() * 1600);
-    window.setTimeout(() => {
-      const currentPrice = Math.max(1, buyerPrice);
-      const outcome = Math.random();
-
-      if (!allowCounter && outcome < 0.72) {
-        setOffers((current) =>
-          current.map((item) =>
-            item.requirementId === requirementId && item.farmerId === farmerId
-              ? { ...item, offeredPrice: currentPrice, farmerConfirmed: true, buyerConfirmed: false, status: "Negotiating" }
-              : item,
-          ),
-        );
-        pushNotification({
-          title: "Farmer accepted",
-          message: `${farmer.name} accepted ${formatCurrency(currentPrice)}.`,
-          type: "order",
-        });
-        showToast(`${farmer.name} accepted ${formatCurrency(currentPrice)}.`);
-        return;
-      }
-
-      if (allowCounter && outcome < 0.32) {
-        setOffers((current) =>
-          current.map((item) =>
-            item.requirementId === requirementId && item.farmerId === farmerId
-              ? { ...item, offeredPrice: currentPrice, farmerConfirmed: true, buyerConfirmed: false, status: "Negotiating" }
-              : item,
-          ),
-        );
-        pushNotification({
-          title: "Farmer accepted your negotiated price",
-          message: `${farmer.name} accepted ${formatCurrency(currentPrice)}.`,
-          type: "order",
-        });
-        showToast(`${farmer.name} accepted your negotiated price.`);
-        return;
-      }
-
-      if (allowCounter && outcome < 0.86) {
-        const offer = offers.find(
-          (item) => item.requirementId === requirementId && item.farmerId === farmerId,
-        );
-        const originalPrice = Math.max(1, offer?.originalPrice ?? currentPrice);
-        const negotiatedPrice = Math.max(1, currentPrice);
-        const lowerPrice = Math.min(originalPrice, negotiatedPrice);
-        const upperPrice = Math.max(originalPrice, negotiatedPrice);
-        const counter =
-          lowerPrice === upperPrice
-            ? lowerPrice
-            : Math.round(lowerPrice + Math.random() * (upperPrice - lowerPrice));
-        setOffers((current) =>
-          current.map((item) =>
-            item.requirementId === requirementId && item.farmerId === farmerId
-              ? { ...item, offeredPrice: counter, originalPrice: item.originalPrice ?? originalPrice, farmerConfirmed: true, buyerConfirmed: false, status: "Negotiating" }
-              : item,
-          ),
-        );
-        pushNotification({
-          title: "Farmer sent a counter offer",
-          message: `${farmer.name} countered at ${formatCurrency(counter)}.`,
-          type: "order",
-        });
-        showToast(`${farmer.name} countered at ${formatCurrency(counter)}.`);
-        return;
-      }
-
-      setOffers((current) =>
-        current.map((item) =>
-          item.requirementId === requirementId && item.farmerId === farmerId
-            ? { ...item, offeredPrice: currentPrice, farmerConfirmed: false, buyerConfirmed: false, status: "Rejected" }
-            : item,
-        ),
-      );
-      clearMarketplaceOfferAfterDelay(requirementId, farmerId);
-      pushNotification({
-        title: "Farmer declined",
-        message: `${farmer.name} declined the request at ${formatCurrency(currentPrice)}.`,
-        type: "order",
-      });
-      showToast(`${farmer.name} declined the request.`);
-    }, delay);
+  const negotiateOffer = async (requirementId:string, farmerId:string, price:number) => {
+    const offer=offers.find(x=>x.requirementId===requirementId&&x.farmerId===farmerId); if(!offer)return;
+    if(!offer.farmerConfirmed){showToast("Wait for the farmer to accept the request first.");return;}
+    try { const result=await API(`/api/requirements/${requirementId}/counter`,{method:"POST",body:JSON.stringify({farmerId,price:Math.max(1,Number(price)||offer.offeredPrice) / (toKg(1,offer.requestedUnit ?? "kg") || 1)})}); const o=result.offer;
+      setOffers(current=>current.map(x=>x.id===offer.id?{...x,offeredPrice:Number(o.offeredPrice),buyerConfirmed:false,farmerConfirmed:false,status:"Negotiating"}:x));
+      showToast("Negotiated price sent. Waiting for the farmer…"); void loadBuyerData();
+    } catch(error){showToast(error instanceof Error?error.message:"Unable to negotiate.");}
   };
 
-  const negotiateOffer = (
-    requirementId: string,
-    farmerId: string,
-    price: number,
-  ) => {
-    const offer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmerId);
-    if (!offer) return;
-    const negotiatedPrice = Math.max(1, Number(price) || offer.offeredPrice);
+  const farmerAcceptOffer = (_requirementId:string,_farmerId:string)=>{};
 
-    setOffers((current) =>
-      current.map((item) =>
-        item.requirementId === requirementId && item.farmerId === farmerId
-          ? {
-              ...item,
-              offeredPrice: negotiatedPrice,
-              originalPrice: item.originalPrice ?? item.offeredPrice,
-              buyerConfirmed: false,
-              farmerConfirmed: false,
-              status: "Negotiating",
-            }
-          : item,
-      ),
-    );
-
-    pushNotification({
-      title: "Negotiation sent",
-      message: `Your negotiated price of ${formatCurrency(negotiatedPrice)} was sent to the farmer.`,
-      type: "order",
-    });
-    showToast("Negotiated price sent. Waiting for the farmer…");
-    scheduleMarketplaceFarmerResponse(requirementId, farmerId, negotiatedPrice, true);
+  const finalizeProcurementOrder = async (requirementId:string, farmerId:string) => {
+    const offer=offers.find(x=>x.requirementId===requirementId&&x.farmerId===farmerId); if(!offer)return;
+    if(!offer.farmerConfirmed){showToast("The farmer must accept the offer first.");return;}
+    try { const result=await API(`/api/requirements/${requirementId}/accept`,{method:"POST",body:JSON.stringify({farmerId})});
+      setOffers(current=>current.map(x=>x.id===offer.id?{...x,buyerConfirmed:true,farmerConfirmed:!!result.offer?.farmerConfirmed,status:result.orderCreated?"Accepted":"Negotiating"}:x));
+      showToast(result.orderCreated?"Both parties accepted. Order confirmed.":"Your acceptance is recorded. Waiting for the farmer to confirm.");
+      if(result.orderCreated) void loadBuyerData();
+    } catch(error){showToast(error instanceof Error?error.message:"Unable to accept offer.");}
   };
 
-  const farmerAcceptOffer = (
-    requirementId: string,
-    farmerId: string,
-  ) => {
-    // Used by the existing procurement/matched-farmer flow. Marketplace cards
-    // use the automatic farmer-response event above and never expose this action.
-    const offer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmerId);
-    if (!offer) return;
-    setOffers((current) => current.map((item) => item.requirementId === requirementId && item.farmerId === farmerId ? { ...item, farmerConfirmed: true, status: item.buyerConfirmed ? "Accepted" : "Negotiating" } : item));
+  const clearMarketplaceOfferAfterDelay = (_requirementId:string,_farmerId:string)=>{};
+
+  const declineOffer = async (requirementId:string, farmerId:string) => {
+    try { await API(`/api/requirements/${requirementId}/decline`,{method:"POST",body:JSON.stringify({farmerId})});
+      setOffers(current=>current.map(x=>x.requirementId===requirementId&&x.farmerId===farmerId?{...x,status:"Rejected",buyerConfirmed:false,farmerConfirmed:false}:x));
+      showToast("Offer declined."); void loadBuyerData();
+    } catch(error){showToast(error instanceof Error?error.message:"Unable to decline offer.");}
   };
 
-  const finalizeProcurementOrder = (
-    requirementId: string,
-    farmerId: string,
-  ) => {
-    const requirement = requirements.find((item) => item.id === requirementId);
-    const offer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmerId);
-    const farmer = MOCK_FARMERS.find((item) => item.id === farmerId);
-
-    if (!offer || !farmer) return;
-
-    const marketplaceProduct = offer.productId
-      ? products.find((item) => item.id === offer.productId)
-      : undefined;
-
-    const effectiveRequirement: Requirement | null = requirement ?? (marketplaceProduct ? {
-      id: requirementId,
-      buyerId: session.buyerId,
-      createdAt: new Date().toISOString(),
-      status: "Matched",
-      items: [{
-        id: `${requirementId}-ITEM`,
-        produce: marketplaceProduct.name,
-        quantity: offer.requestedQuantity ?? 1,
-        unit: offer.requestedUnit ?? "kg",
-        minPrice: marketplaceProduct.pricePerKg,
-        maxPrice: marketplaceProduct.pricePerKg,
-        requiredBy: futureDate(7),
-        location: farmer.location,
-      }],
-    } : null);
-
-    if (!effectiveRequirement) return;
-
-    // Marketplace offers may use the catalog listing id, so finalize also matches the farmer listing by product name.
-    const listings =
-      farmer.listings.filter(
-        (listing) =>
-          (offer.selectedListingIds.includes(listing.id) ||
-            (marketplaceProduct &&
-              listing.produce.toLowerCase() ===
-                marketplaceProduct.name.toLowerCase())),
-      );
-
-    const matchedItems =
-      marketplaceProduct
-        ? effectiveRequirement.items
-        : effectiveRequirement.items.filter(
-            (item) =>
-              listings.some(
-                (listing) =>
-                  listing.produce.toLowerCase() ===
-                  item.produce.toLowerCase(),
-              ),
-          );
-
-    if (matchedItems.length === 0) {
-      showToast(
-        "No selected request items found.",
-      );
-      return;
-    }
-
-    const newOrders: Order[] =
-      matchedItems.map(
-        (item, index) => ({
-          id: `${effectiveRequirement.id}-O${Date.now()}-${index + 1}`,
-          type: "Marketplace",
-          product: item.produce,
-          quantity: Math.max(0.01, toKg(
-            offer.selectedQuantities?.[
-              marketplaceProduct?.listingId ?? item.id
-            ] ??
-              offer.requestedQuantity ??
-              item.quantity,
-            item.unit ?? "kg",
-          )),
-          unit: "kg",
-          cost: Math.max(0.01, toKg(
-            offer.selectedQuantities?.[
-              marketplaceProduct?.listingId ?? item.id
-            ] ??
-              offer.requestedQuantity ??
-              item.quantity,
-            item.unit ?? "kg",
-          )) *
-            (offer.requestedUnit
-              ? offer.offeredPrice /
-                (toKg(1, offer.requestedUnit) || 1)
-              : offer.offeredPrice),
-          seller: farmer.name,
-          sellerId: farmer.id,
-          buyer: session.username,
-          buyerId: session.buyerId,
-          deliveryDate:
-            item.requiredBy,
-          status: "Confirmed",
-          createdAt:
-            new Date().toISOString(),
-        }),
-      );
-
-    setOrders((current) => [
-      ...newOrders,
-      ...current,
-    ]);
-
-    if (requirement) {
-  const alreadyFulfilled = orders
-    .filter((order) => order.id.startsWith(`${requirementId}-O`))
-    .reduce((sum, order) => sum + order.quantity, 0);
-
-  const newlyFulfilled = newOrders.reduce(
-    (sum, order) => sum + order.quantity,
-    0,
-  );
-
-  const requiredQuantity = requirement.items.reduce(
-    (sum, reqItem) =>
-      sum + toKg(reqItem.quantity, reqItem.unit ?? "kg"),
-    0,
-  );
-
-  const isFullyFulfilled =
-    alreadyFulfilled + newlyFulfilled >= requiredQuantity;
-
-  if (isFullyFulfilled) {
-    window.setTimeout(() => {
-      dismissRequirement(requirementId);
-    }, 3000);
-  } else {
-    setRequirements((current) =>
-      current.map((item) =>
-        item.id === requirementId
-          ? { ...item, status: "Matched" }
-          : item,
-      ),
-    );
-  }
-}
-
-    setOffers((current) =>
-      current.map((item) =>
-        item.requirementId ===
-            requirementId &&
-        item.farmerId === farmerId
-          ? {
-              ...item,
-              buyerConfirmed: true,
-              farmerConfirmed: true,
-              status: "Accepted",
-            }
-          : item,
-      ),
-    );
-    clearMarketplaceOfferAfterDelay(requirementId, farmerId);
-
-    newOrders.forEach((order) => {
-      pushNotification({
-        title:
-          "Marketplace order confirmed",
-        message: `${order.product} from ${order.seller} is confirmed as a Marketplace order under ${requirementId}.`,
-        type: "order",
-      });
-    });
-
-    showToast(
-      "Both parties confirmed. Marketplace order created.",
-    );
+  const closeRequirement = async (requirementId:string) => {
+    try { await API(`/api/requirements/${requirementId}/close`,{method:"POST"});
+      setRequirements(current=>current.filter(x=>x.id!==requirementId)); setOffers(current=>current.filter(x=>x.requirementId!==requirementId)); showToast("Requirement closed.");
+    } catch(error){showToast(error instanceof Error?error.message:"Unable to close requirement.");}
   };
 
-  const clearMarketplaceOfferAfterDelay = (requirementId: string, farmerId: string) => {
-    window.setTimeout(() => {
-      setOffers((current) =>
-        current.filter(
-          (item) => !(
-            item.productId &&
-            item.requirementId === requirementId &&
-            item.farmerId === farmerId
-          ),
-        ),
-      );
-    }, 4500);
-  };
-
-  const declineOffer = (requirementId: string, farmerId: string) => {
-    const farmer = MOCK_FARMERS.find((item) => item.id === farmerId);
-    setOffers((current) => current.map((item) => item.requirementId === requirementId && item.farmerId === farmerId ? { ...item, status: "Rejected", buyerConfirmed: false, farmerConfirmed: false } : item));
-    clearMarketplaceOfferAfterDelay(requirementId, farmerId);
-    pushNotification({ title: "Negotiation declined", message: `You declined the offer from ${farmer?.name ?? "farmer"}.`, type: "order" });
-    showToast("Offer declined.");
-  };
-
-  const closeRequirement = (requirementId: string) => {
-  setRequirements((current) =>
-    current.map((requirement) =>
-      requirement.id === requirementId
-        ? { ...requirement, status: "Closed" }
-        : requirement,
-    ),
-  );
-
-  window.setTimeout(() => {
-    dismissRequirement(requirementId);
-  }, 3000);
-
-  showToast("Requirement closed.");
-};
 
 const dismissRequirement = (requirementId: string) => {
   setRequirements((current) =>
@@ -1875,22 +1219,17 @@ const dismissRequirement = (requirementId: string) => {
   );
 };
 
-  const submitFarmerReview = (order: Order, rating: number, comment: string) => {
-    const trimmed = comment.trim();
-    if (!rating || !trimmed) {
-      showToast("Please select a rating and write a review.");
-      return false;
-    }
-    if (farmerReviews.some((review) => review.orderId === order.id)) {
-      showToast("You have already reviewed this order.");
-      return false;
-    }
-    setFarmerReviews((current) => [
-      { id: createId("REVIEW"), farmerId: order.sellerId, orderId: order.id, buyerName: session.username, rating, comment: trimmed, createdAt: new Date().toISOString() },
-      ...current,
-    ]);
-    showToast("Review submitted successfully.");
-    return true;
+  const payOrder = async (orderId:string) => {
+    try { await API(`/api/orders/${orderId}/pay`,{method:"POST"}); showToast("Demo payment successful. Logistics search started."); void loadBuyerData(); }
+    catch(error){showToast(error instanceof Error?error.message:"Unable to complete payment.");}
+  };
+
+  const submitFarmerReview = async (order:Order,rating:number,comment:string) => {
+    const trimmed=comment.trim(); if(!rating||!trimmed){showToast("Please select a rating and write a review.");return false;}
+    if(farmerReviews.some(r=>r.orderId===order.id)){showToast("You have already reviewed this order.");return false;}
+    try { const result=await API(`/api/orders/${order.id}/review`,{method:"POST",body:JSON.stringify({rating,comment:trimmed})});
+      setFarmerReviews(current=>[{id:result.review.id,farmerId:order.sellerId,orderId:order.id,buyerName:session.username,rating,comment:trimmed,createdAt:result.review.createdAt},...current]); showToast("Review submitted successfully."); return true;
+    } catch(error){showToast(error instanceof Error?error.message:"Unable to submit review.");return false;}
   };
 
   /* -------------------------------------------------------
@@ -2119,38 +1458,36 @@ const dismissRequirement = (requirementId: string) => {
       marketplaceSearch,
     ]);
 
-  const addMarketplaceProductToRequirement = (
-    product: Product,
-    quantity: number,
-    unit: RequirementUnit,
-  ) => {
-    const farmer = MOCK_FARMERS.find((item) => item.id === product.farmerId);
-    if (!farmer) return;
-    const safeQuantity = Math.min(
-      fromKg(product.quantityAvailable, unit),
-      Math.max(minimumQuantityForUnit(unit), quantity),
-    );
-    const requirementId = `MARKETPLACE-${product.id}`;
-    const existingOffer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmer.id && item.status !== "Accepted" && item.status !== "Rejected");
-    const newOffer: FarmerOffer = {
-      id: existingOffer?.id ?? createId("OFFER"),
-      requirementId,
-      farmerId: farmer.id,
-      productId: product.id,
-      selectedListingIds: [product.listingId],
-      selectedQuantities: { [product.listingId]: safeQuantity },
-      requestedQuantity: safeQuantity,
-      requestedUnit: unit,
-      offeredPrice: pricePerSelectedUnit(product.pricePerKg, unit),
-      originalPrice: pricePerSelectedUnit(product.pricePerKg, unit),
-      buyerConfirmed: false,
-      farmerConfirmed: false,
-      status: "Requested",
-    };
-    setOffers((current) => existingOffer ? current.map((item) => item.id === existingOffer.id ? newOffer : item) : [newOffer, ...current]);
-    pushNotification({ title: "Request sent to farmer", message: `Your ${formatQuantity(safeQuantity, unit)} request was sent to ${farmer.name}.`, type: "order" });
-    showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
-    scheduleMarketplaceFarmerResponse(requirementId, farmer.id, newOffer.offeredPrice, false);
+  const addMarketplaceProductToRequirement = async (product:Product, quantity:number, unit:RequirementUnit) => {
+    const farmer=farmers.find(x=>x.id===product.farmerId); if(!farmer)return;
+    const safeQuantity=Math.min(fromKg(product.quantityAvailable,unit),Math.max(minimumQuantityForUnit(unit),quantity));
+    try {
+      // Browse-product requests are intentionally kept separate from the
+      // Create Requirement flow. The backend stores them as BROWSE_PRODUCTS
+      // so they can carry the offer/negotiation state without appearing in
+      // Submitted Requirements or Matching Farmers.
+      const requirementPayload=await API("/api/requirements",{method:"POST",body:JSON.stringify({browse:true,location:session.location,items:[{productId:product.productId,quantity:safeQuantity,unit,minPrice:product.pricePerKg,maxPrice:product.pricePerKg,requiredBy:futureDate(7)}]})});
+      const requirementId=requirementPayload.requirementId;
+      const offerPayload=await API(`/api/requirements/${requirementId}/offer`,{method:"POST",body:JSON.stringify({farmerId:farmer.id,offeredPrice:product.pricePerKg,items:[{listingId:product.listingId,quantity:safeQuantity}]})});
+      const o=offerPayload.offer;
+      setOffers(current=>[...current.filter(x=>x.id!==o.id),{id:o.id,requirementId,farmerId:farmer.id,productId:product.productId,selectedListingIds:[product.listingId],selectedQuantities:{[product.listingId]:safeQuantity},requestedQuantity:safeQuantity,requestedUnit:unit,offeredPrice:Number(o.offeredPrice),originalPrice:Number(o.originalPrice??o.offeredPrice),buyerConfirmed:false,farmerConfirmed:false,status:"Requested"}]);
+      showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`); void loadBuyerData();
+    }catch(error){showToast(error instanceof Error?error.message:"Unable to send request.");}
+  };
+
+  const sendSupport = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const subject = support.subject.trim();
+    const message = support.message.trim();
+    if (!subject || !message) { showToast("Please enter a subject and describe the issue."); return; }
+    try {
+      const result = await API("/api/support", { method: "POST", body: JSON.stringify({ subject, message }) });
+      if (result.ticket) setTickets(current => [result.ticket, ...current]);
+      setSupport({ subject: "", message: "" });
+      showToast("Support request submitted successfully.");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Unable to contact support.");
+    }
   };
 
   /* -------------------------------------------------------
@@ -2177,14 +1514,10 @@ const dismissRequirement = (requirementId: string) => {
           navigate("Profile")
         }
         onNotifications={() => {setNotificationOpen((value) => !value);}}
-        onMarkNotifications={() => {
-          setNotifications((current) =>
-            current.map((notification) => ({
-              ...notification,
-              read: true,
-            })),
-          );
-          setNotificationOpen(false);
+        onMarkNotifications={async () => {
+          const unread=notifications.filter(n=>!n.read);
+          try { await Promise.all(unread.map(n=>API(`/api/notifications/${n.id}/read`,{method:"POST"}))); setNotifications([]); setNotificationOpen(false); }
+          catch(error){showToast(error instanceof Error?error.message:"Unable to mark notifications as read.");}
         }}
       />
 
@@ -2206,7 +1539,7 @@ const dismissRequirement = (requirementId: string) => {
               orders={orders}
               requirements={requirements}
               farmers={
-                MOCK_FARMERS
+                farmers
               }
               totalSpend={
                 totalSpend
@@ -2251,14 +1584,14 @@ const dismissRequirement = (requirementId: string) => {
                 setMarketplaceSearch
               }
               onProduct={(product) => {
-                const farmer = MOCK_FARMERS.find((item) => item.id === product.farmerId);
+                const farmer = farmers.find((item) => item.id === product.farmerId);
                 if (farmer) setSelectedFarmer(farmer);
               }}
               procurement={{
                 form: requirementForm,
                 draft: draftRequirement,
                 requirements,
-                farmers: MOCK_FARMERS,
+                farmers: farmers,
                 offers,
                 selectedListingIds,
                 selectedListingQuantities,
@@ -2281,6 +1614,7 @@ const dismissRequirement = (requirementId: string) => {
                 onFarmer: setSelectedFarmer,
               }}
               onAddToRequest={addMarketplaceProductToRequirement}
+              farmers={farmers}
             />
           )}
 
@@ -2306,6 +1640,7 @@ const dismissRequirement = (requirementId: string) => {
                 setOrderSearch
               }
               onSubmitReview={submitFarmerReview}
+              onPayOrder={payOrder}
             />
           )}
 
@@ -2362,9 +1697,11 @@ const dismissRequirement = (requirementId: string) => {
           {activeTab ===
             "Help" && (
             <Help
-              onNavigate={
-                navigate
-              }
+              onNavigate={navigate}
+              support={support}
+              setSupport={setSupport}
+              sendSupport={sendSupport}
+              tickets={tickets}
             />
           )}
 
@@ -2386,6 +1723,13 @@ const dismissRequirement = (requirementId: string) => {
               showToast={
                 showToast
               }
+              onSaveProfile={async (nextSession) => {
+                try {
+                  const payload=await API("/api/profile/me",{method:"PATCH",body:JSON.stringify({firstName:nextSession.username.split(" ")[0],lastName:nextSession.username.split(" ").slice(1).join(" ")||"Buyer",phone:nextSession.phoneNumber,email:nextSession.email,profileImage:nextSession.profileImage,location:nextSession.location,language:nextSession.language,company:nextSession.company})});
+                  const user=payload.user; setSession(current=>({...current,username:`${user.firstName??""} ${user.lastName??""}`.trim()||current.username,phoneNumber:user.phone??current.phoneNumber,email:user.email??current.email,profileImage:user.profileImage??current.profileImage,location:user.location??current.location,language:user.language??current.language,company:nextSession.company}));
+                  showToast("Profile updated successfully.");
+                } catch(error){showToast(error instanceof Error?error.message:"Unable to update profile.");}
+              }}
             />
           )}
         </main>
@@ -2461,7 +1805,7 @@ function Header({
   onNavigate: (view: View) => void;
   onProfile: () => void;
   onNotifications: () => void;
-  onMarkNotifications: () => void;
+  onMarkNotifications: () => void | Promise<void>;
 }) {
   return (
     <header className="buyer-header">
@@ -2483,7 +1827,7 @@ function Header({
           }
         >
           <span className="buyer-brand-mark">
-            <img src="./KhetLink_Logo.svg" alt="KhetLink Logo" width={38} height={38}/>
+            <img src="/Khetlink_Logo.svg" alt="KhetLink Logo" width={38} height={38}/>
           </span>
           <span>
             <strong>KhetLink</strong>
@@ -3224,6 +2568,7 @@ function Marketplace({
   onProduct,
   procurement,
   onAddToRequest,
+  farmers,
 }: {
   products: Product[];
   categories: string[];
@@ -3240,6 +2585,7 @@ function Marketplace({
   ) => void;
   procurement: Parameters<typeof Procurement>[0];
   onAddToRequest: (product: Product, quantity: number, unit: RequirementUnit) => void;
+  farmers: Farmer[];
 }) {
   const [sortBy, setSortBy] = useState("relevance");
   const displayProducts = useMemo(() => {
@@ -3276,15 +2622,6 @@ function Marketplace({
         </p>
 
 
-      </section>
-
-      <section className="marketplace-procurement-section">
-        <div className="marketplace-section-divider">
-          <p className="eyebrow green">1. STATE YOUR REQUIREMENTS</p>
-          <h2>Need produce at scale?</h2>
-          <p>Create a requirement, choose quantity and unit, match farmers, then request, negotiate, confirm or decline from the same Marketplace.</p>
-        </div>
-        <Procurement {...procurement} />
       </section>
 
       <section className="marketplace-browse-section">
@@ -3374,28 +2711,40 @@ function Marketplace({
                 product={
                   product
                 }
+                farmer={farmers.find(f => f.id === product.farmerId)}
                 onView={() =>
                   onProduct(
                     product,
                   )
                 }
-                offer={procurement.offers.find((item) => item.productId === product.id && item.farmerId === product.farmerId)}
+                offer={procurement.offers.find((item) => (item.productId === product.productId || item.selectedListingIds.includes(product.listingId)) && item.farmerId === product.farmerId)}
                 onAddToRequest={(quantity, unit) => onAddToRequest(product, quantity, unit)}
-                onNegotiate={(price) => procurement.onNegotiate(`MARKETPLACE-${product.id}`, product.farmerId, price)}
-                onConfirm={() => procurement.onConfirm(`MARKETPLACE-${product.id}`, product.farmerId)}
-                onDecline={() => procurement.onDeclineOffer(`MARKETPLACE-${product.id}`, product.farmerId)}
+                onNegotiate={(price) => { const o=procurement.offers.find(x=>(x.productId===product.productId || x.selectedListingIds.includes(product.listingId))&&x.farmerId===product.farmerId); if(o) procurement.onNegotiate(o.requirementId,product.farmerId,price); }}
+                onConfirm={() => { const o=procurement.offers.find(x=>(x.productId===product.productId || x.selectedListingIds.includes(product.listingId))&&x.farmerId===product.farmerId); if(o) procurement.onConfirm(o.requirementId,product.farmerId); }}
+                onDecline={() => { const o=procurement.offers.find(x=>(x.productId===product.productId || x.selectedListingIds.includes(product.listingId))&&x.farmerId===product.farmerId); if(o) procurement.onDeclineOffer(o.requirementId,product.farmerId); }}
               />
             ),
           )}
         </div>
       )}
       </section>
+
+      <section className="marketplace-procurement-section">
+        <div className="marketplace-section-divider">
+          <p className="eyebrow green">1. STATE YOUR REQUIREMENTS</p>
+          <h2>Need produce at scale?</h2>
+          <p>Create a requirement, choose quantity and unit, match farmers, then request, negotiate, confirm or decline from the same Marketplace.</p>
+        </div>
+        <Procurement {...procurement} />
+      </section>
+
     </div>
   );
 }
 
 function ProductCard({
   product,
+  farmer,
   onView,
   onAddToRequest,
   offer,
@@ -3404,6 +2753,7 @@ function ProductCard({
   onDecline,
 }: {
   product: Product;
+  farmer?: Farmer;
   onView: () => void;
   onAddToRequest: (quantity: number, unit: RequirementUnit) => void;
   offer?: FarmerOffer;
@@ -3522,9 +2872,9 @@ function ProductCard({
             </div>
             <StatusOffer status={visibleOffer.status} />
             <div className="negotiation-actions">
-              {visibleOffer.status !== "Rejected" && (
+              {visibleOffer.status !== "Rejected" && visibleOffer.farmerConfirmed && !visibleOffer.buyerConfirmed && (
                 <button type="button" onClick={() => onNegotiate(price)}>
-                  {visibleOffer.farmerConfirmed ? "Send New Price" : "Negotiate"}
+                  Send New Price
                 </button>
               )}
               {visibleOffer.status === "Negotiating" && visibleOffer.farmerConfirmed && !visibleOffer.buyerConfirmed && (
@@ -3533,11 +2883,11 @@ function ProductCard({
               {visibleOffer.status === "Negotiating" && !visibleOffer.buyerConfirmed && (
                 <button type="button" className="product-decline-btn" onClick={onDecline}>Decline</button>
               )}
-              {visibleOffer.status === "Requested" && (
+              {!visibleOffer.farmerConfirmed && visibleOffer.status !== "Rejected" && visibleOffer.status !== "Accepted" && (
                 <span className="farmer-response-waiting">Waiting for farmer response…</span>
               )}
             </div>
-            <AcceptanceStatus farmer={MOCK_FARMERS.find((item) => item.id === product.farmerId)!} offer={visibleOffer} />
+            {farmer && <AcceptanceStatus farmer={farmer} offer={visibleOffer} />}
           </div>
         )}
       </div>
@@ -4062,17 +3412,7 @@ function ProcurementRequest({
   ) => void;
 }) {
   const matchedFarmers = farmers
-    .filter((farmer) =>
-      farmer.listings.some((listing) =>
-        requirement.items.some(
-          (item) =>
-            listing.produce.toLowerCase() ===
-              item.produce.toLowerCase() &&
-            listing.availableQuantity >=
-              toKg(item.quantity, item.unit),
-        ),
-      ),
-    )
+    .filter((farmer) => requirement.matchedFarmerIds?.length ? requirement.matchedFarmerIds.includes(farmer.id) : farmer.listings.some((listing) => requirement.items.some((item) => listing.produce.toLowerCase() === item.produce.toLowerCase())))
     .sort((a, b) => {
       const satisfied = (farmer: Farmer) =>
         requirement.items.reduce((sum, item) => {
@@ -4290,7 +3630,7 @@ function MatchedFarmerCard({
           (item) =>
             item.produce.toLowerCase() ===
               listing.produce.toLowerCase() &&
-            listing.availableQuantity >=
+            toKg(listing.availableQuantity, listing.unit) >=
               toKg(item.quantity, item.unit),
         ),
     );
@@ -4383,7 +3723,7 @@ function MatchedFarmerCard({
                 </span>
                 <div className="matching-quantity-control">
                   <button type="button" onClick={(event) => { event.preventDefault(); onToggle(listing.id); }}>{selected.includes(listing.id) ? "✓" : "Select"}</button>
-                  <input type="number" min="100" max={listing.availableQuantity} value={selectedQuantities[listing.id] ?? ""} onChange={(event) => { const raw = event.target.value; const next = raw === "" ? 0 : Number(raw); if (next > 0 && !selected.includes(listing.id)) onToggle(listing.id); if (next === 0 && selected.includes(listing.id)) onToggle(listing.id); onSetQuantity(listing.id, Number.isFinite(next) ? next : 0); }} onBlur={() => { const current = selectedQuantities[listing.id] ?? 0; if (current > 0) onSetQuantity(listing.id, Math.max(100, Math.min(listing.availableQuantity, current))); }} />
+                  <input type="number" min="1" max={listing.availableQuantity} value={selectedQuantities[listing.id] ?? ""} onChange={(event) => { const raw = event.target.value; const next = raw === "" ? 0 : Number(raw); if (next > 0 && !selected.includes(listing.id)) onToggle(listing.id); if (next === 0 && selected.includes(listing.id)) onToggle(listing.id); onSetQuantity(listing.id, Number.isFinite(next) ? next : 0); }} onBlur={() => { const current = selectedQuantities[listing.id] ?? 0; if (current > 0) onSetQuantity(listing.id, Math.max(1, Math.min(listing.availableQuantity, current))); }} />
                   <span>kg</span>
                 </div>
               </label>
@@ -4444,21 +3784,11 @@ function MatchedFarmerCard({
             />
 
             <div className="negotiation-actions">
-              {offer.status !==
-                "Accepted" && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    onNegotiate(
-                      price,
-                    )
-                  }
-                >
-                  Negotiate
-                </button>
+              {offer.status !== "Accepted" && offer.farmerConfirmed && !offer.buyerConfirmed && (
+                <button type="button" onClick={() => onNegotiate(price)}>Negotiate</button>
               )}
 
-              {!offer.buyerConfirmed && offer.status === "Negotiating" && (
+              {!offer.buyerConfirmed && offer.status === "Negotiating" && offer.farmerConfirmed && (
                 <button type="button" onClick={onDecline}>Decline</button>
               )}
 
@@ -4485,6 +3815,9 @@ function MatchedFarmerCard({
                 </button>
               )}
             </div>
+            {!offer.farmerConfirmed && offer.status !== "Rejected" && offer.status !== "Accepted" && (
+              <span className="farmer-response-waiting">Waiting for farmer response…</span>
+            )}
 
             <AcceptanceStatus
               farmer={farmer}
@@ -4595,12 +3928,14 @@ function Orders({
   onFilter,
   onSearch,
   onSubmitReview,
+  onPayOrder,
 }: {
   orders: Order[];
   allOrders: Order[];
   filter: string;
   search: string;
-  onSubmitReview: (order: Order, rating: number, comment: string) => boolean;
+  onSubmitReview: (order: Order, rating: number, comment: string) => Promise<boolean>;
+  onPayOrder: (orderId:string) => Promise<void>;
   onFilter: (
     value: string,
   ) => void;
@@ -4699,6 +4034,12 @@ function Orders({
             <div className="live-map order-live-map"><MapIcon size={28} /><strong>{selectedOrder.id}</strong><span>Live Order Map</span><small>{selectedOrder.seller} → {selectedOrder.buyer}</small></div>
             <h3>Live Order Status</h3>
             <div className="selected-order-status"><StatusBadge status={selectedOrder.status} /><strong>{selectedOrder.product}</strong><span>{selectedOrder.quantity} kg · {formatCurrency(selectedOrder.cost)}</span></div>
+            {selectedOrder.paymentStatus === "PENDING" && selectedOrder.status !== "Pending" && (
+              <>
+                <p className="payment-deadline-warning">Attention: payment is due within one hour or the order will be automatically cancelled.</p>
+                <button type="button" className="buyer-primary-button small" onClick={() => void onPayOrder(selectedOrder.id)}>Pay Now</button>
+              </>
+            )}
             {selectedOrder.status !== "Pending" && (
               <button type="button" className="buyer-outline-button small order-review-trigger" onClick={() => { setReviewOrderId(selectedOrder.id); setReviewRating(0); setReviewComment(""); }}>Write Review</button>
             )}
@@ -4737,7 +4078,7 @@ function Orders({
                 <textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="Write your experience with this farmer..." rows={4} />
                 <div className="modal-actions">
                   <button type="button" className="buyer-outline-button small" onClick={() => setReviewOrderId(null)}>Cancel</button>
-                  <button type="button" className="buyer-primary-button small" onClick={() => { if (onSubmitReview(selectedOrder, reviewRating, reviewComment)) { setReviewOrderId(null); setReviewRating(0); setReviewComment(""); } }}>Submit Review</button>
+                  <button type="button" className="buyer-primary-button small" onClick={async () => { if (await onSubmitReview(selectedOrder, reviewRating, reviewComment)) { setReviewOrderId(null); setReviewRating(0); setReviewComment(""); } }}>Submit Review</button>
                 </div>
               </div>
             )}
@@ -4997,10 +4338,9 @@ function Shipment({
               </strong>
 
               <span>
-                Connect Google Maps
-                or Mapbox coordinates
-                from the logistics
-                backend here.
+                {active.currentLocation ? `Logistics current location: ${active.currentLocation}` : "Waiting for logistics live location."}
+                {active.distanceKm != null ? ` · ${active.distanceKm} km remaining` : ""}
+                {active.etaMinutes != null ? ` · ETA ${active.etaMinutes} min` : ""}
               </span>
 
               <div className="route-line">
@@ -5008,6 +4348,12 @@ function Shipment({
                 <i />
                 <i />
               </div>
+            </div>
+
+            <div className="shipment-route-summary buyer-card">
+              <strong>Pickup</strong><span>{active.pickupLocation ?? "Not available"}</span>
+              <strong>Delivery</strong><span>{active.deliveryLocation ?? "Not available"}</span>
+              {active.logisticsName && <><strong>Logistics</strong><span>{active.logisticsName}{active.logisticsRating != null ? ` · ${active.logisticsRating}/5` : ""}</span></>}
             </div>
 
             <div className="shipment-steps">
@@ -5550,83 +4896,38 @@ function Kpi({
 
 function Help({
   onNavigate,
+  support,
+  setSupport,
+  sendSupport,
+  tickets,
 }: {
-  onNavigate: (
-    view: View,
-  ) => void;
+  onNavigate: (view: View) => void;
+  support: { subject: string; message: string };
+  setSupport: React.Dispatch<React.SetStateAction<{ subject: string; message: string }>>;
+  sendSupport: (event: React.FormEvent) => Promise<void>;
+  tickets: SupportTicket[];
 }) {
   return (
     <div className="buyer-main help-main">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow green">
-            KHETLINK SUPPORT
-          </p>
-
-          <h1>
-            How can we help?
-          </h1>
-
-          <p>
-            Use Marketplace to browse produce, state requirements, negotiate with farmers and manage purchases in one place.
-          </p>
-        </div>
+      <div className="page-heading"><div><p className="eyebrow green">HELP & SUPPORT</p><h1>How can we help?</h1><p>Follow the process and contact KhetLink support when something needs attention.</p></div></div>
+      <div className="help-grid buyer-help-process-grid">
+        <section className="buyer-card help-card help-process-card"><h2>How Marketplace orders work</h2>{[
+          "Browse farmer listings and choose the product, quantity and unit you need.",
+          "Add products to a requirement or send a request directly to the selected farmer.",
+          "Review negotiation updates and confirm the offer when the farmer has responded.",
+          "Once both sides confirm, the backend creates the order and tracks payment.",
+          "Shipment and delivery updates stay connected to the same order record."
+        ].map((text, index) => <div className="buyer-help-step" key={text}><span>{index + 1}</span><p>{text}</p></div>)}</section>
+        <section className="buyer-card help-card help-process-card"><h2>How Shipment works</h2>{[
+          "Open Orders to see payment and shipment status for confirmed purchases.",
+          "After Logistics is assigned, pickup and delivery information appears on the order.",
+          "Follow the live shipment information and current provider location when available.",
+          "Delivery completion is controlled by the Logistics workflow and verification rules.",
+          "If anything looks incorrect, report the issue through Contact Support."
+        ].map((text, index) => <div className="buyer-help-step" key={text}><span>{index + 1}</span><p>{text}</p></div>)}</section>
       </div>
-
-      <div className="help-grid">
-        <HelpCard
-          icon={<Store />}
-          title="Marketplace"
-          text="Choose a farmer listing, set quantity, add it to your cart and purchase."
-          button="Open Marketplace"
-          onClick={() =>
-            onNavigate(
-              "Marketplace",
-            )
-          }
-        />
-
-        <HelpCard
-          icon={<Truck />}
-          title="Orders & Shipment"
-          text="Confirmed Marketplace orders are connected to delivery tracking."
-          button="View Orders"
-          onClick={() =>
-            onNavigate(
-              "Orders",
-            )
-          }
-        />
-      </div>
-
-      <section className="buyer-card support-contact-card">
-        <div>
-          <div className="support-contact-icon">
-            <Phone
-              size={22}
-            />
-          </div>
-
-          <div>
-            <h2>
-              KhetLink Support
-            </h2>
-
-            <p>
-              Need help with an
-              order, farmer or
-              procurement request?
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="buyer-outline-button"
-        >
-          Contact Support
-        </button>
-      </section>
+      <section className="buyer-card buyer-support-card"><div className="buyer-section-heading"><div><span>Need assistance?</span><h2>Contact Support</h2></div><Phone size={20}/></div><p>Report a discrepancy, issue or message. Your support request is stored in the backend.</p><form onSubmit={sendSupport} className="buyer-support-form"><input value={support.subject} onChange={e => setSupport(current => ({ ...current, subject: e.target.value }))} placeholder="Subject"/><textarea value={support.message} onChange={e => setSupport(current => ({ ...current, message: e.target.value }))} placeholder="Describe the issue"/><button type="submit" className="buyer-primary-button"><Send size={16}/> Contact Support</button></form></section>
+      <section className="buyer-card buyer-support-tickets"><div className="buyer-section-heading"><div><span>Backend records</span><h2>My support tickets</h2></div></div>{tickets.length ? tickets.map(ticket => <div className="buyer-support-ticket" key={ticket.id}><div><strong>{ticket.subject}</strong><small>{ticket.message}</small></div><span>{ticket.status || "OPEN"}</span><time>{new Date(ticket.createdAt).toLocaleString()}</time></div>) : <div className="profile-empty"><HelpCircle size={22}/><strong>No support tickets yet</strong><span>Your submitted requests will appear here.</span></div>}</section>
     </div>
   );
 }
@@ -5681,456 +4982,173 @@ function Profile({
   onSessionChange,
   onNavigate,
   showToast,
+  onSaveProfile,
 }: {
   session: BuyerSession;
   orders: Order[];
-  onSessionChange: (
-    session: BuyerSession,
-  ) => void;
-  onNavigate: (
-    view: View,
-  ) => void;
-  showToast: (
-    message: string,
-  ) => void;
+  onSessionChange: (session: BuyerSession) => void;
+  onNavigate: (view: View) => void;
+  showToast: (message: string) => void;
+  onSaveProfile?: (session: BuyerSession) => Promise<void>;
 }) {
-  const [image, setImage] =
-    useState(
-      session.profileImage ??
-        "",
-    );
-
-  const [username, setUsername] =
-    useState(
-      session.username,
-    );
-
-  const [phone, setPhone] =
-    useState(
-      session.phoneNumber,
-    );
-
-  const [email, setEmail] =
-    useState(
-      session.email ?? "",
-    );
-
-  const [company, setCompany] =
-    useState(
-      session.company ??
-        session.username,
-    );
-
-  const [location, setLocation] =
-    useState(
-      session.location ??
-        "",
-    );
-
-  const [language, setLanguage] =
-    useState(
-      session.language ??
-        "English",
-    );
+  const [editing, setEditing] = useState(false);
+  const [image, setImage] = useState(session.profileImage ?? "");
+  const [username, setUsername] = useState(session.username);
+  const [phone, setPhone] = useState(session.phoneNumber);
+  const [email, setEmail] = useState(session.email ?? "");
+  const [company, setCompany] = useState(session.company ?? session.username);
+  const [location, setLocation] = useState(session.location ?? "");
+  const [latitude, setLatitude] = useState<number | null>(session.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(session.longitude ?? null);
+  const [language, setLanguage] = useState(session.language ?? "English");
+  const [locationQuery, setLocationQuery] = useState(session.location ?? "");
+  const [locationSuggestions, setLocationSuggestions] = useState<Array<{display_name:string;lat:string;lon:string}>>([]);
+  const [locationSearching, setLocationSearching] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setImage(
-      session.profileImage ??
-        "",
-    );
+    if (editing) return;
+    setImage(session.profileImage ?? "");
+    setUsername(session.username);
+    setPhone(session.phoneNumber);
+    setEmail(session.email ?? "");
+    setCompany(session.company ?? session.username);
+    setLocation(session.location ?? "");
+    setLatitude(session.latitude ?? null);
+    setLongitude(session.longitude ?? null);
+    setLocationQuery(session.location ?? "");
+    setLanguage(session.language ?? "English");
+  }, [session, editing]);
 
-    setUsername(
-      session.username,
-    );
+  useEffect(() => {
+    const q = locationQuery.trim();
+    if (!editing || q.length < 3) { setLocationSuggestions([]); return; }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        setLocationSearching(true);
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=${encodeURIComponent(q)}`, { signal: controller.signal, headers: { Accept: "application/json" } });
+        const data = await response.json();
+        setLocationSuggestions(Array.isArray(data) ? data : []);
+      } catch {} finally { setLocationSearching(false); }
+    }, 350);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [locationQuery, editing]);
 
-    setPhone(
-      session.phoneNumber,
-    );
+  const selectLocation = (item: {display_name:string;lat:string;lon:string}) => {
+    setLocation(item.display_name);
+    setLocationQuery(item.display_name);
+    setLatitude(Number(item.lat));
+    setLongitude(Number(item.lon));
+    setLocationSuggestions([]);
+  };
 
-    setEmail(
-      session.email ??
-        "",
-    );
+  const captureLocation = () => {
+    if (!navigator.geolocation) { showToast("Live location is not supported by this browser."); return; }
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(async position => {
+      const nextLat = position.coords.latitude;
+      const nextLng = position.coords.longitude;
+      let readable = "";
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${nextLat}&lon=${nextLng}&zoom=18&addressdetails=1`, { headers: { Accept: "application/json" } });
+        const data = await response.json();
+        readable = data?.display_name || "";
+      } catch {}
+      setLatitude(nextLat); setLongitude(nextLng);
+      if (readable) { setLocation(readable); setLocationQuery(readable); }
+      setBusy(false);
+    }, error => { showToast(error.message || "Location permission was not granted."); setBusy(false); }, { enableHighAccuracy: true, timeout: 12000 });
+  };
 
-    setCompany(
-      session.company ??
-        session.username,
-    );
+  const handleImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { showToast("Please select an image file."); return; }
+    const reader = new FileReader();
+    reader.onload = () => setImage(String(reader.result));
+    reader.readAsDataURL(file);
+  };
 
-    setLocation(
-      session.location ??
-        "",
-    );
+  const cancelEdit = () => {
+    setImage(session.profileImage ?? ""); setUsername(session.username); setPhone(session.phoneNumber);
+    setEmail(session.email ?? ""); setCompany(session.company ?? session.username); setLocation(session.location ?? "");
+    setLatitude(session.latitude ?? null); setLongitude(session.longitude ?? null); setLocationQuery(session.location ?? "");
+    setLanguage(session.language ?? "English"); setLocationSuggestions([]); setEditing(false);
+  };
 
-    setLanguage(
-      session.language ??
-        "English",
-    );
-  }, [session]);
-
-  const handleImage = (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file =
-      event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (
-      !file.type.startsWith(
-        "image/",
-      )
-    ) {
-      showToast(
-        "Please select an image file.",
-      );
-      return;
-    }
-
-    const reader =
-      new FileReader();
-
-    reader.onload = () => {
-      setImage(
-        String(
-          reader.result,
-        ),
-      );
+  const saveProfile = async () => {
+    const nextSession: BuyerSession = {
+      ...session, username: username.trim() || session.username, phoneNumber: phone.trim(), email: email.trim() || undefined,
+      company: company.trim() || undefined, location: location.trim() || undefined, latitude, longitude, language, profileImage: image || undefined,
     };
-
-    reader.readAsDataURL(
-      file,
-    );
+    if (!nextSession.location || latitude == null || longitude == null) { showToast("Please add your buyer location using search or current location before saving."); setEditing(true); return; }
+    setBusy(true);
+    try {
+      onSessionChange(nextSession);
+      if (onSaveProfile) await onSaveProfile(nextSession);
+      else showToast("Profile updated successfully.");
+      setEditing(false);
+    } finally { setBusy(false); }
   };
 
-  const saveProfile = () => {
-    const nextSession: BuyerSession =
-      {
-        ...session,
-        username:
-          username.trim() ||
-          session.username,
-        phoneNumber:
-          phone.trim(),
-        email:
-          email.trim() ||
-          undefined,
-        company:
-          company.trim() ||
-          undefined,
-        location:
-          location.trim() ||
-          undefined,
-        language,
-        profileImage:
-          image ||
-          undefined,
-      };
-
-    onSessionChange(
-      nextSession,
-    );
-
-    showToast(
-      "Profile updated successfully.",
-    );
-  };
-
-  const totalOrders =
-    orders.length;
+  const mapSrc = latitude != null && longitude != null
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.015}%2C${latitude - 0.01}%2C${longitude + 0.015}%2C${latitude + 0.01}&layer=mapnik&marker=${latitude}%2C${longitude}`
+    : "";
+  const totalOrders = orders.length;
 
   return (
     <div className="buyer-main profile-main">
       <div className="page-heading">
-        <div>
-          <p className="eyebrow green">
-            ACCOUNT
-          </p>
-
-          <h1>
-            Profile
-          </h1>
-
-          <p>
-            Manage your buyer
-            identity and account
-            information.
-          </p>
-        </div>
+        <div><p className="eyebrow green">ACCOUNT</p><h1>Profile</h1><p>Manage your centralized identity and Buyer details.</p></div>
+        {!editing && <button type="button" className="buyer-primary-button" onClick={() => setEditing(true)}><Pencil size={16}/> Edit profile</button>}
       </div>
 
       <section className="profile-cover buyer-card">
         <div className="profile-avatar-section">
-          <div className="buyer-profile-avatar-large">
-            {image ? (
-              <img
-                src={image}
-                alt={
-                  username
-                }
-              />
-            ) : (
-              getInitials(
-                username,
-              )
-            )}
-          </div>
-
-          <label className="profile-upload-button">
-            <Upload
-              size={15}
-            />
-            Upload Photo
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={
-                handleImage
-              }
-            />
-          </label>
+          <div className="buyer-profile-avatar-large">{image ? <img src={image} alt={username}/> : getInitials(username)}</div>
+          {editing && <label className="profile-upload-button"><Pencil size={15}/> Upload Photo<input type="file" accept="image/*" onChange={handleImage}/></label>}
         </div>
-
-        <div className="profile-identity">
-          <span className="verified-pill">
-            <Check
-              size={12}
-            />
-            Verified Buyer
-          </span>
-
-          <h2>
-            {username}
-          </h2>
-
-          <p>
-            Buyer ID:{" "}
-            <strong>
-              {
-                session.buyerId
-              }
-            </strong>
-          </p>
-
-          <small>
-            {phone}
-          </small>
-        </div>
-
-        <div className="profile-mini-stat">
-          <strong>
-            {totalOrders}
-          </strong>
-          <span>
-            Total Orders
-          </span>
-        </div>
+        <div className="profile-identity"><span className="verified-pill"><Check size={12}/> Verified Buyer</span><h2>{username}</h2><p>Buyer ID: <strong>{session.buyerId || "—"}</strong></p><small>{company || phone}</small></div>
+        <div className="profile-mini-stat"><strong>{totalOrders}</strong><span>Total Orders</span></div>
       </section>
 
       <section className="profile-content-grid">
         <article className="buyer-card profile-form-card">
-          <div className="section-heading">
-            <div>
-              <h2>
-                Personal Information
-              </h2>
-              <p>
-                Update the information
-                associated with your
-                buyer account.
-              </p>
+          <div className="buyer-section-heading"><div><span>Personal & buyer information</span><h2>Profile details</h2></div></div>
+          <div className="profile-form-grid">
+            {[["First name", username.split(" ")[0] || "Buyer"],["Phone Number", phone],["Email", email],["Company / Organization", company]].map(([label,value], index) => <Field label={label} key={label}><input type={label === "Email" ? "email" : "text"} value={value} disabled={!editing || index < 2} readOnly={!editing || index < 2} onChange={e => { if (label === "Email") setEmail(e.target.value); else if (label === "Company / Organization") setCompany(e.target.value); }} /></Field>)}
+          </div>
+
+          <div className="profile-location-section">
+            <div className="buyer-section-heading"><div><span>Buyer location</span><h2>Location</h2></div></div>
+            <div className="location-editor-grid">
+              <div className="location-search-box">
+                <div className="location-input-wrap"><Search size={15}/><input value={locationQuery} disabled={!editing} onChange={e => { setLocationQuery(e.target.value); setLocation(e.target.value); setLatitude(null); setLongitude(null); }} placeholder="Search your business or delivery location"/><button type="button" title="Use current location" disabled={!editing || busy} onClick={captureLocation}><MapPin size={16}/></button></div>
+                {editing && (locationSearching || locationSuggestions.length > 0) && <div className="location-suggestions">{locationSearching && <div className="location-suggestion muted">Searching locations…</div>}{locationSuggestions.map(item => <button type="button" className="location-suggestion" key={`${item.lat}-${item.lon}`} onClick={() => selectLocation(item)}><MapPin size={14}/><span>{item.display_name}</span></button>)}</div>}
+                <p className="location-current-text">Search for a location or use the current-location button. The selected coordinates are saved with your Buyer profile.</p>
+              </div>
             </div>
           </div>
 
           <div className="profile-form-grid">
-            <Field
-              label="Username"
-            >
-              <input value={username} readOnly disabled onChange={(
-                  event,
-                ) =>
-                  setUsername(
-                    event
-                      .target
-                      .value,
-                  )
-                }
-              />
-            </Field>
-
-            <Field
-              label="Phone Number"
-            >
-              <input value={phone} readOnly disabled onChange={(
-                  event,
-                ) =>
-                  setPhone(
-                    event
-                      .target
-                      .value,
-                  )
-                }
-              />
-            </Field>
-
-            <Field
-              label="Email"
-            >
-              <input type="email" value={email} readOnly disabled onChange={(
-                  event,
-                ) =>
-                  setEmail(
-                    event
-                      .target
-                      .value,
-                  )
-                }
-                placeholder="buyer@example.com"
-              />
-            </Field>
-
-            <Field
-              label="Company / Organization"
-            >
-              <input
-                value={
-                  company
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setCompany(
-                    event
-                      .target
-                      .value,
-                  )
-                }
-              />
-            </Field>
-
-            <Field
-              label="Location"
-            >
-              <input
-                value={
-                  location
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setLocation(
-                    event
-                      .target
-                      .value,
-                  )
-                }
-                placeholder="City, State"
-              />
-            </Field>
-
-            <Field
-              label="Language"
-            >
-              <select
-                value={
-                  language
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setLanguage(
-                    event
-                      .target
-                      .value,
-                  )
-                }
-              >
-                <option>
-                  English
-                </option>
-                <option>
-                  Hindi
-                </option>
-                <option>
-                  Marathi
-                </option>
-              </select>
-            </Field>
+            <Field label="Language"><select value={language} disabled={!editing} onChange={e => setLanguage(e.target.value)}><option>English</option><option>Hindi</option><option>Marathi</option><option>Bengali</option></select></Field>
+            <Field label="Saved Location"><div className="profile-read-value">{session.location || "Not provided"}</div></Field>
           </div>
 
-          <button
-            type="button"
-            className="buyer-primary-button"
-            onClick={
-              saveProfile
-            }
-          >
-            <Check size={16} />
-            Save Changes
-          </button>
+          {editing && <div className="profile-form-actions"><button type="button" className="buyer-outline-button" onClick={cancelEdit} disabled={busy}>Cancel</button><button type="button" className="buyer-primary-button" onClick={() => void saveProfile()} disabled={busy}><Check size={16}/> {busy ? "Saving…" : "Save changes"}</button></div>}
         </article>
 
         <aside className="buyer-card profile-side-card">
-          <h3>
-            Account Details
-          </h3>
-
-          <ProfileInfo
-            icon={
-              <UserCircle />
-            }
-            label="Buyer ID"
-            value={
-              session.buyerId
-            }
-          />
-
-          <ProfileInfo
-            icon={
-              <Phone />
-            }
-            label="Phone"
-            value={
-              session.phoneNumber
-            }
-          />
-
-          <ProfileInfo
-            icon={
-              <MapPin />
-            }
-            label="Location"
-            value={
-              session.location ||
-              "Not added"
-            }
-          />
-
-          <ProfileInfo
-            icon={
-              <Settings />
-            }
-            label="Account Type"
-            value="Buyer"
-          />
-
-          <button
-            type="button"
-            className="buyer-outline-button profile-orders-button"
-            onClick={() =>
-              onNavigate(
-                "Orders",
-              )
-            }
-          >
-            View My Orders
-            <ArrowRight
-              size={15}
-            />
-          </button>
+          <div className="buyer-section-heading"><div><span>Account overview</span><h2>Buyer details</h2></div><UserCircle size={18}/></div>
+          <div className="profile-info-list">
+            <ProfileInfo icon={<UserCircle/>} label="Buyer ID" value={session.buyerId || "—"}/>
+            <ProfileInfo icon={<Phone/>} label="Phone" value={session.phoneNumber || "Not added"}/>
+            <ProfileInfo icon={<MapPin/>} label="Location" value={session.location || "Not added"}/>
+            <ProfileInfo icon={<Settings/>} label="Account Type" value="Buyer"/>
+          </div>
+          <div className="catalog-map-wrap"><div className="catalog-map-heading"><span>Buyer location map</span><MapPin size={15}/></div><div className="location-map-card">{mapSrc ? <iframe title="Buyer location map" src={mapSrc}/> : <div className="map-empty"><MapPin size={28}/><span>Add and save a location to see the map.</span></div>}</div></div>
+          <button type="button" className="buyer-outline-button profile-orders-button" onClick={() => onNavigate("Orders")}>View My Orders <ArrowRight size={15}/></button>
         </aside>
       </section>
     </div>

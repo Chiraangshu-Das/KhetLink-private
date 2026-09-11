@@ -483,10 +483,10 @@
 .matching-header p { margin:3px 0 0; color:#7c8780; font-size:9px; }
 .matching-header > strong { color:var(--buyer-green); font-size:10px; }
 .matched-farmer-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.matched-farmer-card { border:1px solid #dfe9e2; border-radius:10px; overflow:hidden; background:#fff; }
-.farmer-photo { position:relative; height:112px; display:grid; place-items:center; background:linear-gradient(135deg,#d8eddb,#bcdcbc); }
-.farmer-photo > span { font-size:27px; font-weight:900; color:#fff; text-shadow:0 2px 5px rgba(0,0,0,.22); }
-.farmer-photo em { position:absolute; right:7px; top:7px; padding:4px 6px; border-radius:20px; background:#dff6e6; color:#187441; font-size:7px; font-style:normal; font-weight:800; }
+.matched-farmer-card { border:1px solid #dfe9e2; border-radius:10px; overflow:hidden; background:#fff; min-width:0; }
+.matched-farmer-card .farmer-photo { position:relative; height:112px !important; min-height:112px; max-height:112px; width:100%; display:grid; place-items:center; overflow:hidden; background:linear-gradient(135deg,#d8eddb,#bcdcbc); }
+.matched-farmer-card .farmer-photo > span { width:100%; height:100%; display:block; font-size:27px; font-weight:900; color:#fff; text-shadow:0 2px 5px rgba(0,0,0,.22); }
+.matched-farmer-card .farmer-photo em { position:absolute; right:7px; top:7px; padding:4px 6px; border-radius:20px; background:#dff6e6; color:#187441; font-size:7px; font-style:normal; font-weight:800; }
 .matched-farmer-copy { padding:10px; }
 .matched-title { display:flex; align-items:center; justify-content:space-between; gap:6px; }
 .matched-title strong { font-size:11px; }
@@ -923,7 +923,8 @@
 
 .profile-form-card input:disabled { color: #4f5d55; background: #f4f7f5; cursor: not-allowed; opacity: 1; }
 .profile-form-card input[readonly] { border-color: #dce6df; }
-.supplier-avatar img,.farmer-photo img,.farmer-modal-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+.supplier-avatar img,.farmer-modal-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+.matched-farmer-card .farmer-photo img { width:100%; height:100%; max-width:100%; max-height:112px; object-fit:cover; border-radius:0; display:block; }
 
 @media (max-width: 1100px) {
   .dashboard-insights { grid-template-columns: 1fr 1fr; }
@@ -2052,4 +2053,57 @@
   font-size: 15px;
   font-weight: 700;
   color: #24453d;
+}
+/* KhetLink Buyer parity with Farmer workspace */
+@media (min-width: 761px) {
+  .buyer-header-inner { position: relative; }
+  .buyer-top-nav { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; }
+  .buyer-header-spacer { flex: 1; }
+}
+
+.profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e8efea;
+}
+.profile-form-actions .buyer-outline-button,
+.profile-form-actions .buyer-primary-button { min-height: 40px; padding: 0 16px; }
+.profile-form-card { overflow: visible; }
+.location-editor-grid { display: block; }
+.location-search-box { position: relative; }
+.location-map-card { min-height: 240px; overflow: hidden; border: 1px solid #dce7df; border-radius: 10px; background: #eef5ef; }
+.location-map-card iframe { width: 100%; height: 240px; border: 0; display: block; }
+.catalog-map-wrap { margin-top: 18px; padding-top: 15px; border-top: 1px solid #e8efea; }
+.catalog-map-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; color:#516158; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; }
+.catalog-map-heading svg { color:var(--buyer-green); }
+.map-empty { min-height: 240px; display:grid; place-items:center; align-content:center; gap:8px; padding:25px; text-align:center; color:#839087; font-size:10px; }
+.buyer-help-process-grid { grid-template-columns: 1fr 1fr; }
+.help-process-card { min-height: 300px; }
+.buyer-help-step { display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid #edf2ee; font-size:10px; line-height:1.5; }
+.buyer-help-step:last-child { border-bottom:0; }
+.buyer-help-step > span { width:22px; height:22px; flex:0 0 22px; display:grid; place-items:center; border-radius:50%; background:#e7f6eb; color:var(--buyer-green-dark); font-size:9px; font-weight:900; }
+.buyer-help-step p { margin:2px 0 0; color:#5f6d65; }
+.buyer-support-card { margin-top: 14px; padding: 18px; }
+.buyer-support-card > p { margin: 0 0 12px; color:#66736b; font-size:10px; line-height:1.5; }
+.buyer-support-form { display:grid; gap:10px; }
+.buyer-support-form input, .buyer-support-form textarea { width:100%; border:1px solid var(--buyer-border); border-radius:8px; padding:10px 11px; outline:none; background:#fff; color:var(--buyer-ink); font-size:10px; }
+.buyer-support-form textarea { min-height:100px; resize:vertical; }
+.buyer-support-form input:focus, .buyer-support-form textarea:focus { border-color:#6eb68c; box-shadow:0 0 0 3px #e9f6ed; }
+.buyer-support-form .buyer-primary-button { width:max-content; }
+.buyer-support-tickets { margin-top:14px; padding:18px; }
+.buyer-support-ticket { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:14px; align-items:center; padding:12px 0; border-bottom:1px solid #edf2ee; }
+.buyer-support-ticket:last-child { border-bottom:0; }
+.buyer-support-ticket strong, .buyer-support-ticket small { display:block; }
+.buyer-support-ticket small { margin-top:4px; color:#6e7a73; font-size:9px; line-height:1.4; }
+.buyer-support-ticket > span { padding:4px 7px; border-radius:999px; background:#e7f6eb; color:#1f6c42; font-size:8px; font-weight:900; }
+.buyer-support-ticket time { color:#89938d; font-size:8px; white-space:nowrap; }
+
+@media (max-width: 760px) {
+  .buyer-help-process-grid { grid-template-columns: 1fr; }
+  .buyer-support-ticket { grid-template-columns: 1fr auto; }
+  .buyer-support-ticket time { grid-column: 1 / -1; }
+  .buyer-support-form .buyer-primary-button { width:100%; justify-content:center; }
 }
