@@ -2,10 +2,8 @@
 
 import React, { useEffect, useState, useRef, useMemo, MouseEvent } from "react";
 import Link from "next/link";
+import FarmerProfile from "./FarmerProfile";
 import "./farmer.css";
-import LanguageSelector from "./LanguageSelector";
-import LocationButton from "./LocationButton";
-import { apiGet, apiPatch, apiPost } from "../lib/api";
 
 /* Place the attached leaf logo at /public/Khetlink_Logo.svg (Next.js). */
 const LOGO_SRC = "/Khetlink_Logo.svg";
@@ -17,7 +15,7 @@ const HERO_PHOTO_SRC = "/Carousel2.jpeg";
 /* Route to the dedicated Profile page (see farmer-profile.tsx). Profile is
    no longer a popup — it's its own full page, linked from the nav, the
    header menu, and the "My Profile" quick action. */
-const PROFILE_ROUTE = "/farmer/profile";
+const PROFILE_ROUTE = "/farmer?view=profile";
 
 /* =========================================================
    PRODUCE CATALOG — shared with the Profile page's product list,
@@ -70,8 +68,11 @@ const priceTiers = ["Fixed: ₹18–22/unit", "Fixed: ₹23–27/unit", "Fixed: 
    TYPES
 ========================================================= */
 interface Listing {
+  id?: string;
+  productId?: string;
   name: string;
   qty: number;
+  unit?: string;
   price: number;
   status: "Active" | "Sold" | "Paused";
 }
@@ -84,8 +85,7 @@ type AdStatus = "accepted" | "rejected" | "offered" | "countered" | "negotiating
    contact — so deals are always closed through KhetLink instead
    of going around it. */
 interface BuyerAd {
-  requirementId?: string;
-  listingId?: string;
+  requirementId: string;
   buyerRef: string;
   buyerType: string;
   region: string;
@@ -124,7 +124,7 @@ interface OtherFarmer {
   price: number;
 }
 
-type FullScreenId = "listings" | "transactions" | "shipment" | null;
+type FullScreenId = "listings" | "transactions" | "shipment" | "profile" | null;
 
 interface NotificationItem {
   kind: "offer" | "ship";
@@ -151,7 +151,7 @@ const initialBuyerAds: BuyerAd[] = [
   { buyerRef: "B-5512", buyerType: "Grocery Mart", region: "Kolkata region", product: "Onion", qty: "100 kg", price: 23, status: null, bargainOpen: false, offer: "" },
 ];
 
-let transactions: Transaction[] = [
+const transactions: Transaction[] = [
   { date: "18 Aug 2024", crop: "Tomato", qty: "100 kg", amt: "₹2,400", status: "Paid" },
   { date: "16 Aug 2024", crop: "Potato", qty: "200 kg", amt: "₹4,000", status: "Paid" },
   { date: "14 Aug 2024", crop: "Onion", qty: "150 kg", amt: "₹3,300", status: "Paid" },
@@ -166,7 +166,7 @@ let transactions: Transaction[] = [
 
 /* Shipment descriptions are masked the same way — buyer type + broad
    region, never a company name or address. */
-let shipments: Shipment[] = [
+const shipments: Shipment[] = [
   {
     id: "#KL1024",
     desc: "Tomato · 300 kg → Verified buyer (Hotel & Restaurant, Kolkata region)",
@@ -191,7 +191,7 @@ let shipments: Shipment[] = [
   },
 ];
 
-let otherFarmers: OtherFarmer[] = [
+const otherFarmers: OtherFarmer[] = [
   { name: "Tomato", rating: 4.8, qty: "120 kg available", price: 24 },
   { name: "Potato", rating: 4.6, qty: "200 kg available", price: 20 },
   { name: "Onion", rating: 4.7, qty: "150 kg available", price: 22 },
@@ -336,9 +336,9 @@ function Header({
         {navItem("Offers", scrollToOffers, false)}
         {navItem("Earnings", () => openFullScreen("transactions"), activeFullScreen === "transactions")}
         {navItem("Tracking", () => openFullScreen("shipment"), activeFullScreen === "shipment")}
-        <Link href={PROFILE_ROUTE}>Profile</Link>
+        <button className="khl-nav-profile-button" onClick={() => openFullScreen("profile")}>Profile</button>
       </nav>
-      <div className="khl-head-right"><LanguageSelector compact />
+      <div className="khl-head-right">
         <div
           className="khl-bell"
           aria-label={`${notifications.length} recent updates`}
@@ -358,7 +358,7 @@ function Header({
           <div className="avatar">{initials}</div> {firstName} <span className="khl-menu-caret">▾</span>
           {menuOpen && (
             <div className="khl-dropdown" onClick={(e) => e.stopPropagation()}>
-              <Link href={PROFILE_ROUTE} className="item">My Profile</Link>
+              <button className="item" onClick={() => openFullScreen("profile")}>My Profile</button>
               <div className="item">Language: English</div>
               <div className="item">Help Center</div>
               <div className="item danger">Log Out</div>
@@ -404,7 +404,7 @@ function FarmerSidebar({
           {item("Offers", scrollToOffers, false)}
           {item("Earnings", () => openFullScreen("transactions"), activeFullScreen === "transactions")}
           {item("Tracking", () => openFullScreen("shipment"), activeFullScreen === "shipment")}
-          <Link href={PROFILE_ROUTE} className="farmer-sidebar-link">Profile</Link>
+          <button className="farmer-sidebar-link" onClick={() => openFullScreen("profile")}>Profile</button>
         </div>
       </aside>
     </>
@@ -519,6 +519,7 @@ function StatsRow({ listingCount, orderCount }: { listingCount: number; orderCou
 function AddListingForm({ onAdd }: { onAdd: (listing: Listing) => void }) {
   const [crop, setCrop] = useState("");
   const [qty, setQty] = useState("");
+  const [unit, setUnit] = useState("kg");
   const [priceTier, setPriceTier] = useState("");
   const [savedMsg, setSavedMsg] = useState(false);
 
@@ -528,10 +529,11 @@ function AddListingForm({ onAdd }: { onAdd: (listing: Listing) => void }) {
     if (!canSubmit) return;
     const parsedQty = Number(qty);
     const impliedPrice = priceTier.startsWith("Negotiable") ? 0 : Number(priceTier.match(/₹(\d+)/)?.[1] ?? 20);
-    onAdd({ name: crop, qty: Number.isFinite(parsedQty) ? parsedQty : 0, price: impliedPrice, status: "Active" });
+    onAdd({ name: crop, qty: Number.isFinite(parsedQty) ? parsedQty : 0, unit, price: impliedPrice || 20, status: "Active" });
     setCrop("");
     setQty("");
     setPriceTier("");
+    setUnit("kg");
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 2000);
   };
@@ -560,6 +562,12 @@ function AddListingForm({ onAdd }: { onAdd: (listing: Listing) => void }) {
         <div className="khl-field">
           <label>Quantity</label>
           <input type="number" min="0" placeholder="e.g. 120 (kg / L / dozen)" value={qty} onChange={(e) => setQty(e.target.value)} />
+        </div>
+        <div className="khl-field">
+          <label>Unit</label>
+          <select value={unit} onChange={(e) => setUnit(e.target.value)}>
+            <option value="kg">kg</option><option value="ton">ton</option><option value="dozen">dozen</option><option value="litre">litre</option>
+          </select>
         </div>
         <div className="khl-field">
           <label>Price</label>
@@ -608,7 +616,7 @@ function RecentListings({ listings, onViewAll }: { listings: Listing[]; onViewAl
 /* =========================================================
    QUICK ACTIONS
 ========================================================= */
-function QuickActionsRow({ onTransactions, onShipment }: { onTransactions: () => void; onShipment: () => void }) {
+function QuickActionsRow({ onTransactions, onShipment, onProfile }: { onTransactions: () => void; onShipment: () => void; onProfile: () => void }) {
   return (
     <div className="khl-quick-row">
       <div className="khl-quick-card green" onClick={onTransactions}>
@@ -624,7 +632,7 @@ function QuickActionsRow({ onTransactions, onShipment }: { onTransactions: () =>
         </div>
         <div className="khl-quick-arrow">→</div>
       </div>
-      <Link href={PROFILE_ROUTE} className="khl-quick-card blue">
+      <button className="khl-quick-card blue" onClick={onProfile}>
         <div className="khl-quick-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="#2f5fd6" strokeWidth="2">
             <circle cx="12" cy="8" r="4" />
@@ -636,7 +644,7 @@ function QuickActionsRow({ onTransactions, onShipment }: { onTransactions: () =>
           <div className="s">Update your farm details</div>
         </div>
         <div className="khl-quick-arrow">→</div>
-      </Link>
+      </button>
       <div className="khl-quick-card purple" onClick={onShipment}>
         <div className="khl-quick-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="#6a3fc0" strokeWidth="2">
@@ -947,7 +955,7 @@ function ShipmentFullScreen({ onClose }: { onClose: () => void }) {
 function fullScreenFromLocation(): FullScreenId {
   if (typeof window === "undefined") return null;
   const view = new URLSearchParams(window.location.search).get("view");
-  if (view === "listings" || view === "transactions" || view === "shipment") return view;
+  if (view === "listings" || view === "transactions" || view === "shipment" || view === "profile") return view;
   return null;
 }
 
@@ -959,11 +967,20 @@ export default function KhetLinkDashboard() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [buyerAds, setBuyerAds] = useState<BuyerAd[]>([]);
 
-  const [profileName, setProfileName] = useState("Farmer");
+  // Profile name is read-only here for greeting purposes; editing now
+  // happens entirely on the dedicated Profile page.
+  const [profileName, setProfileName] = useState("Ramesh Kumar");
 
   useEffect(() => {
-    document.title = "KhetLink | Farmer Interface";
-    const load=async()=>{try{const me=await (await fetch('/api/auth/me',{credentials:'include'})).json();setProfileName(`${me.firstName??''} ${me.lastName??''}`.trim()||'Farmer');const [ls,reqs,orders]=await Promise.all([(await fetch('/api/listings',{credentials:'include'})).json(),(await fetch('/api/farmer/requests',{credentials:'include'})).json(),(await fetch('/api/orders',{credentials:'include'})).json()]);const farmerListings=(Array.isArray(ls)?ls:[]).filter((x:any)=>x.farmerId===me.id);setListings(farmerListings.map((x:any)=>({name:x.product?.name||'Produce',qty:x.quantityAvailable,price:x.price,status:x.quantityAvailable>0?'Active':'Sold'})));setBuyerAds((Array.isArray(reqs)?reqs:[]).flatMap((r:any)=>r.items.map((i:any)=>({buyerRef:r.code,buyerType:'Buyer',region:r.locationText||'Location',product:i.product?.name||'Produce',qty:`${i.quantity} ${i.unit}`,price:i.maxPrice,status:null,bargainOpen:false,offer:'',requirementId:r.id,listingId:farmerListings.find((x:any)=>x.productId===i.productId)?.id||''}))));transactions=(Array.isArray(orders)?orders:[]).map((o:any)=>{const i=o.items?.[0];return {date:new Date(o.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),crop:i?.product?.name||'Produce',qty:`${i?.quantity||0} ${i?.unit||'kg'}`,amt:`₹${Number(o.totalAmount||0).toFixed(0)}`,status:o.paymentStatus==='PAID'?'Paid':'Pending'};});shipments=(Array.isArray(orders)?orders:[]).filter((o:any)=>o.shipment).map((o:any)=>({id:o.code,desc:`${o.items?.[0]?.product?.name||'Produce'} · ${o.items?.[0]?.quantity||0} ${o.items?.[0]?.unit||'kg'} → Buyer`,steps:[{t:'Order Confirmed',s:new Date(o.createdAt).toLocaleString('en-IN'),done:true},{t:'Processing',s:'Farmer handoff verified',done:['PROCESSING','IN_TRANSIT','DELIVERED'].includes(o.status)},{t:'In Transit',s:'Logistics update',done:['IN_TRANSIT','DELIVERED'].includes(o.status)},{t:'Delivered',s:'Buyer handoff',done:o.status==='DELIVERED'}]}));}catch{}};load();const timer=window.setInterval(load,10000);return()=>window.clearInterval(timer);
+    const load = async () => {
+      try {
+        const [p,l] = await Promise.all([fetch('/api/profile/me',{credentials:'include'}),fetch('/api/listings/mine',{credentials:'include'})]);
+        if (p.ok) { const x=await p.json(); const u=x.user; setProfileName(`${u.firstName??''} ${u.lastName??''}`.trim() || 'Farmer'); }
+        if (l.ok) { const x=await l.json(); setListings((x.listings??[]).map((r:any)=>({id:r.id,productId:r.productId,name:r.product?.name??'Produce',qty:r.quantity,unit:r.unit,price:r.price,status:r.status}))); }
+        const incoming = await fetch('/api/requirements/incoming',{credentials:'include'});
+        if (incoming.ok) { const x=await incoming.json(); setBuyerAds((x.requirements??[]).map((r:any)=>({ requirementId:r.id, buyerRef:`BUY-${String(r.buyer?.id??'').slice(-6).toUpperCase()}`, buyerType:'Verified Buyer', region:r.buyer?.location??'Region protected', product:r.items?.[0]?.product?.name??'Produce', qty:r.items?.reduce((sum:number,i:any)=>sum+i.quantity,0)+` ${r.items?.[0]?.unit??'kg'}`, price:r.items?.[0]?.maxPrice??0, status:null, bargainOpen:false, offer:String(r.items?.[0]?.maxPrice??'') }))); }
+      } catch {}
+    }; load();
   }, []);
 
   const offersRef = useRef<HTMLDivElement>(null);
@@ -989,11 +1006,33 @@ export default function KhetLinkDashboard() {
     offersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const addListing = (listing: Listing) => setListings((prev) => [listing, ...prev]);
+  const addListing = async (listing: Listing) => {
+    try {
+      const catalogRes = await fetch("/api/catalog", { credentials: "include" });
+      const catalog = catalogRes.ok ? await catalogRes.json() : [];
+      const product = catalog.find((p: any) => p.name === listing.name);
+      if (!product) throw new Error("Product not found");
+      const response = await fetch("/api/listings", {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, quantity: listing.qty, unit: listing.unit ?? "kg", price: listing.price || 20, status: "Active" }),
+      });
+      if (!response.ok) throw new Error("Unable to create listing");
+      const created = await response.json();
+      setListings((prev) => [{ id: created.id, productId: created.productId, name: listing.name, qty: created.quantity, unit: created.unit, price: created.price, status: created.status }, ...prev]);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const respondAd = async (idx: number, status: AdStatus) => {
-    const current=buyerAds[idx]; if(!current?.requirementId||!current.listingId){return;}
-    try{const me=await apiGet<any>('/auth/me');const offer=await apiPost<any>('/offers',{requirementId:current.requirementId,farmerId:me.id,listingId:current.listingId,quantity:Number(current.qty.match(/[0-9.]+/)?.[0]||0),offeredPrice:Number(current.price||0)});if(status==='accepted')await apiPatch(`/offers/${offer.id}`,{status:'ACCEPTED'});else if(status==='rejected')await apiPatch(`/offers/${offer.id}`,{status:'REJECTED'});setBuyerAds(prev=>prev.map((a,i)=>i===idx?{...a,status,bargainOpen:false}:a));}catch{}
+    const current = buyerAds[idx]; if (!current) return;
+    if (status === "accepted" || status === "rejected") {
+      try {
+        const response = await fetch(`/api/requirements/${current.requirementId}/farmer-response`, { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action: status === "accepted" ? "accept" : "decline" }) });
+        if (!response.ok) throw new Error();
+      } catch { return; }
+    }
+    setBuyerAds(prev=>prev.map((a,i)=>i===idx?{...a,status,bargainOpen:false}:a));
   };
 
   const toggleBargain = (idx: number) => {
@@ -1005,9 +1044,9 @@ export default function KhetLinkDashboard() {
   };
 
   const sendOffer = async (idx: number) => {
-    const current = buyerAds[idx]; const counter=Number(current?.offer);
-    if(!current||!current.requirementId||!current.listingId||!Number.isFinite(counter)||counter<=0)return;
-    try{await apiPost('/offers',{requirementId:current.requirementId,farmerId:(await apiGet<any>('/auth/me')).id,listingId:current.listingId,quantity:Number(current.qty.match(/[0-9.]+/)?.[0]||0),offeredPrice:counter});setBuyerAds(prev=>prev.map((a,i)=>i===idx?{...a,status:'offered',bargainOpen:false}:a));}catch{}
+    const current=buyerAds[idx]; const counter=Number(current?.offer); if(!current||!Number.isFinite(counter)||counter<=0)return;
+    const response=await fetch(`/api/requirements/${current.requirementId}/farmer-response`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"counter",price:counter})});
+    if(!response.ok)return; setBuyerAds(prev=>prev.map((a,i)=>i===idx?{...a,status:"offered",bargainOpen:false}:a));
   };
 
   const pendingAcceptedCount = buyerAds.filter((a) => a.status === "accepted").length;
@@ -1042,14 +1081,17 @@ export default function KhetLinkDashboard() {
       <Hero profileName={profileName} />
 
       <main className="khl-main">
-        <StatsRow listingCount={listings.length} orderCount={8 + pendingAcceptedCount} />
+        {activeFullScreen === "profile" ? (
+          <FarmerProfile embedded />
+        ) : (<>
+        <StatsRow listingCount={listings.length} orderCount={buyerAds.length} />
 
         <div className="khl-grid-2">
           <AddListingForm onAdd={addListing} />
           <RecentListings listings={listings} onViewAll={() => openFullScreen("listings")} />
         </div>
 
-        <QuickActionsRow onTransactions={() => openFullScreen("transactions")} onShipment={() => openFullScreen("shipment")} />
+        <QuickActionsRow onTransactions={() => openFullScreen("transactions")} onShipment={() => openFullScreen("shipment")} onProfile={() => openFullScreen("profile")} />
 
         <div className="khl-grid-2">
           <TransactionHistoryCard onViewAll={() => openFullScreen("transactions")} />
@@ -1066,6 +1108,7 @@ export default function KhetLinkDashboard() {
         />
 
         <OtherFarmersCarousel />
+        </>)}
       </main>
 
       {activeFullScreen === "listings" && <ListingsFullScreen listings={listings} onClose={closeFullScreen} />}

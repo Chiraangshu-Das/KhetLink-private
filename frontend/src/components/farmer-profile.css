@@ -116,3 +116,8 @@
   .farmer-profile-photo-preview{margin:auto}
   .farmer-profile-photo-actions{width:100%}
 }
+.khl-profile-embedded .khl-profile-topbar,
+.khl-profile-embedded .farmer-profile-mobile-menu,
+.khl-profile-embedded .farmer-profile-sidebar-backdrop,
+.khl-profile-embedded .farmer-profile-sidebar { display: none !important; }
+.khl-profile-embedded .khl-profile-page-main { padding-top: 24px; }

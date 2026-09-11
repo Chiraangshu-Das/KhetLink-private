@@ -2053,8 +2053,3 @@
   font-weight: 700;
   color: #24453d;
 }
-/* Demo checkout modal */
-.buyer-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(11,31,19,.48);display:flex;align-items:center;justify-content:center;padding:20px}
-.buyer-modal-card{position:relative;width:min(520px,100%);background:#fff;border-radius:20px;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.2)}
-.buyer-modal-card h3{margin:4px 0 8px;font-size:24px}.buyer-modal-card p{color:#66756b}.buyer-modal-close{position:absolute;right:16px;top:16px;border:0;background:#f3f6f3;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;cursor:pointer}
-.payment-choice-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}.payment-choice{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:14px 16px;border:1px solid #d9e5dc;background:#f8fbf8;border-radius:13px;cursor:pointer}.payment-choice:hover{border-color:#16834a;transform:translateY(-1px)}.payment-choice strong{font-size:15px;color:#123c23}.payment-choice span{font-size:13px;color:#718077}

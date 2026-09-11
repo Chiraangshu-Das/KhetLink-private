@@ -69,9 +69,6 @@ import {
 
 import "./Buyer.css";
 import Link from "next/link";
-import LanguageSelector from "./LanguageSelector";
-import LocationButton from "./LocationButton";
-import { apiGet, apiPost } from "../lib/api";
 /* =========================================================
    TYPES
 ========================================================= */
@@ -115,12 +112,12 @@ type RequirementUnit = "kg" | "L" | "ton" | "dozen";
 
 interface FarmerListing {
   id: string;
+  catalogProductId?: string;
+  category?: string;
   produce: string;
   availableQuantity: number;
-  productId?: string;
   pricePerKg: number;
-  unit: "kg";
-  category?: string;
+  unit: RequirementUnit;
 }
 
 interface Farmer {
@@ -135,14 +132,13 @@ interface Farmer {
   avatar: string;
   farm: string;
   about: string;
-  landAcres?: number;
   listings: FarmerListing[];
 }
 
 interface Product {
   id: string;
   listingId: string;
-  productId?: string;
+  catalogProductId?: string;
   farmerId: string;
   farmerName: string;
   name: string;
@@ -151,7 +147,6 @@ interface Product {
   pricePerKg: number;
   rating: number;
   reviews: number;
-  distanceKm?: number;
   deliveryTime: string;
   image: string;
 }
@@ -159,7 +154,6 @@ interface Product {
 interface CartItem {
   id: string;
   productId: string;
-  listingId: string;
   farmerId: string;
   farmerName: string;
   product: string;
@@ -182,8 +176,6 @@ interface RequirementItem {
 
 interface Requirement {
   id: string;
-  backendId?: string;
-  code?: string;
   buyerId: string;
   createdAt: string;
   status: RequirementStatus;
@@ -208,7 +200,6 @@ interface FarmerOffer {
 
 interface Order {
   id: string;
-  backendId?: string;
   type: OrderType;
   product: string;
   quantity: number;
@@ -221,8 +212,6 @@ interface Order {
   deliveryDate: string;
   status: OrderStatus;
   createdAt: string;
-  paymentStatus?: "PENDING" | "PAID" | "FAILED";
-  paymentDeadline?: string;
 }
 
 interface FarmerReview {
@@ -253,34 +242,146 @@ interface BuyerSession {
   company?: string;
   location?: string;
   language?: string;
-  latitude?: number;
-  longitude?: number;
 }
 
 /* =========================================================
-   BACKEND DATA
-   ---------------------------------------------------------
-   These module-level containers are populated from the authenticated
-   API session. They are not demo records or client-side authority.
+   UTILITY FUNCTIONS
 ========================================================= */
 
-let buyerSessionSeed: BuyerSession = { username: "Buyer", phoneNumber: "", buyerId: "", language: "English", latitude: 0, longitude: 0 };
-let farmerCatalog: Farmer[] = [];
+const formatCurrency = (value: number) =>
+  `₹${value.toLocaleString("en-IN")}`;
 
-const PRODUCT_IMAGE_MAP: Record<string,string> = {
-  honey:'/buyer_card.png', tomato:'/Carousel1.jpeg', potato:'/Carousel2.jpeg', onion:'/Carousel3.jpeg', rice:'/Carousel4.jpeg', wheat:'/Carousel5.jpeg', mango:'/Carousel6.jpeg', banana:'/Carousel7.jpeg', milk:'/Carousel8.jpeg', fish:'/Carousel9.jpeg'
+const toKg = (quantity: number, unit: RequirementUnit = "kg") => {
+  if (unit === "ton") return quantity * 1000;
+  if (unit === "dozen") return quantity * 12;
+  // For liquid listings, keep 1 L as the working 1 kg equivalent in this mock catalog.
+  if (unit === "L") return quantity;
+  return quantity;
 };
-const productImage=(name:string)=>PRODUCT_IMAGE_MAP[name.trim().toLowerCase()]||'/buyer_card.png';
-const formatCurrency=(value:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number.isFinite(value)?value:0);
-const unitFactor=(unit:RequirementUnit|string)=>unit==="ton"?1000:1;
-const toKg=(quantity:number,unit:RequirementUnit|string)=>Number(quantity||0)*unitFactor(unit);
-const fromKg=(kg:number,unit:RequirementUnit|string)=>Number(kg||0)/unitFactor(unit);
-const minimumQuantityForUnit=(unit:RequirementUnit|string)=>unit==="ton"?1:unit==="dozen"?1:1;
-const pricePerSelectedUnit=(pricePerKg:number,unit:RequirementUnit|string)=>unit==="ton"?pricePerKg*1000:pricePerKg;
-const formatQuantity=(quantity:number,unit:RequirementUnit|string)=>`${Math.round(quantity*100)/100} ${unit}`;
-const renderAvatar=(src:string|undefined,name:string)=>src?<img src={src} alt={name}/>:getInitials(name);
 
-const createId = (prefix: string) => `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+const fromKg = (quantityKg: number, unit: RequirementUnit = "kg") => {
+  if (unit === "ton") return quantityKg / 1000;
+  if (unit === "dozen") return quantityKg / 12;
+  return quantityKg;
+};
+
+const minimumQuantityForUnit = (unit: RequirementUnit) => fromKg(100, unit);
+
+const pricePerSelectedUnit = (pricePerKg: number, unit: RequirementUnit) =>
+  unit === "ton" ? pricePerKg * 1000 :
+  unit === "dozen" ? pricePerKg * 12 :
+  pricePerKg;
+
+const formatQuantity = (quantity: number, unit: RequirementUnit = "kg") =>
+  `${Number.isInteger(quantity) ? quantity : Number(quantity.toFixed(2))} ${unit}`;
+
+const isImageSource = (value: string) =>
+  value.startsWith("http://") ||
+  value.startsWith("https://") ||
+  value.startsWith("data:image/") ||
+  value.startsWith("/");
+
+const getProductImage = (product: string) => {
+  const normalized = product.toLowerCase();
+  const images: Record<string, string> = {
+    tomato: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&w=900&q=85",
+    potato: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=900&q=85",
+    onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=900&q=85",
+    spinach: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=900&q=85",
+    carrot: "https://images.unsplash.com/photo-1445282768818-728615cc910a?auto=format&fit=crop&w=900&q=85",
+    cabbage: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&w=900&q=85",
+    mango: "https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=900&q=85",
+    banana: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=900&q=85",
+    apple: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=900&q=85",
+    orange: "https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&w=900&q=85",
+    grapes: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=900&q=85",
+  };
+  const key = Object.keys(images).find((name) => normalized.includes(name));
+  return key ? images[key] : "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=85";
+};
+
+const renderAvatar = (value: string, name: string) =>
+  isImageSource(value) ? <img src={value} alt={name} /> : (value || getInitials(name));
+
+const downloadPdf = (filename: string, title: string, lines: string[]) => {
+  const escape = (value: string) =>
+    value
+      .replace(/₹/g, "INR ")
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)");
+
+  const allLines = [title, "", ...lines];
+  const chunks: string[][] = [];
+  for (let index = 0; index < allLines.length; index += 46) {
+    chunks.push(allLines.slice(index, index + 46));
+  }
+  if (chunks.length === 0) chunks.push([title]);
+
+  const pageObjects: string[] = [];
+  const contentObjects: string[] = [];
+  chunks.forEach((chunk) => {
+    let stream = "BT\n/F1 10 Tf\n50 760 Td\n";
+    chunk.forEach((line, index) => {
+      if (index) stream += "0 -15 Td\n";
+      stream += `(${escape(line)}) Tj\n`;
+    });
+    stream += "ET";
+    contentObjects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+  });
+
+  const objects: string[] = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "",
+  ];
+  const pageRefs: string[] = [];
+  let objectNumber = 3;
+  chunks.forEach((_, index) => {
+    const pageObjectNumber = objectNumber++;
+    const contentObjectNumber = objectNumber++;
+    pageRefs.push(`${pageObjectNumber} 0 R`);
+    pageObjects.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${2 + chunks.length * 2 + 1} 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`,
+    );
+  });
+
+  objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${chunks.length} >>`;
+  pageObjects.forEach((page) => objects.push(page));
+  contentObjects.forEach((content) => objects.push(content));
+  const fontObjectNumber = objects.length + 1;
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+  // Correct page font references now that the final font object number is known.
+  const pageStart = 2;
+  for (let index = 0; index < chunks.length; index += 1) {
+    const pageObjectIndex = pageStart + index;
+    objects[pageObjectIndex] = objects[pageObjectIndex].replace(/\/F1 \d+ 0 R/, `/F1 ${fontObjectNumber} 0 R`);
+  }
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index < offsets.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+
+  const blob = new Blob([pdf], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
+const createId = (prefix: string) =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const getInitials = (name: string) => {
   const parts = name.trim().split(/\s+/);
@@ -327,26 +428,6 @@ const downloadTextFile = (
  * Later replace this function with a real PDF library such as
  * jsPDF or a backend-generated PDF endpoint.
  */
-const downloadOrderPdf = async (order: Order) => { try { const r=await fetch(`/api/orders/${encodeURIComponent(order.backendId||order.id)}/pdf`,{credentials:'include'}); if(!r.ok)throw new Error(); const blob=await r.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`khetlink-${order.id}.pdf`; a.click(); URL.revokeObjectURL(url); } catch { alert('Unable to export the order receipt.'); } };
-
-const downloadPdf = (filename: string, title: string, lines: string[]) => {
-  const esc = (value: string) => value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-  const content = ["BT", "/F1 16 Tf", "60 760 Td", `(${esc(title)}) Tj`, "/F1 10 Tf", "0 -28 Td", ...lines.flatMap((line) => [`(${esc(line.slice(0, 110))}) Tj`, "0 -16 Td"]), "ET"].join("\n");
-  const objects = [
-    `1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj`,
-    `2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj`,
-    `3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj`,
-    `4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj`,
-    `5 0 obj << /Length ${new TextEncoder().encode(content).length} >> stream\n${content}\nendstream endobj`,
-  ];
-  let pdf = "%PDF-1.4\n"; const offsets=[0];
-  for(const obj of objects){offsets.push(new TextEncoder().encode(pdf).length); pdf += obj + "\n";}
-  const xref=new TextEncoder().encode(pdf).length; pdf += `xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
-  for(let i=1;i<offsets.length;i++) pdf += `${String(offsets[i]).padStart(10,"0")} 00000 n \n`;
-  pdf += `trailer << /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  const blob=new Blob([pdf],{type:"application/pdf"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
-};
-
 const exportOrdersPdf = (orders: Order[], selectedOrder?: Order) => {
   const target = selectedOrder ? [selectedOrder] : orders;
   const lines = target.flatMap((order) => [
@@ -455,12 +536,11 @@ const viewHref = (view: View) => {
 ========================================================= */
 
 export default function Buyer() {
-  useEffect(() => { document.title = "KhetLink | Buyer Interface"; }, []);
   const [activeTab, setActiveTab] =
   useState<View>("Dashboard");
 
-  const [session, setSession] =
-    useState<BuyerSession>(buyerSessionSeed);
+  const [session, setSession] = useState<BuyerSession>({ username: "Buyer", phoneNumber: "", buyerId: "", language: "English" });
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
 
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
@@ -518,36 +598,74 @@ export default function Buyer() {
   ------------------------------------------------------- */
 
   useEffect(() => {
-    (async()=>{
+    const bootstrap = async () => {
       try {
-        const me = await (await fetch('/api/auth/me',{credentials:'include'})).json();
-        const name = `${me.firstName ?? ''} ${me.lastName ?? ''}`.trim() || 'Buyer';
-        buyerSessionSeed = { username:name, phoneNumber:me.phone||'', buyerId:me.buyer?.buyerId||me.roles?.find((r:any)=>r.role==='BUYER')?.roleId||'', profileImage:me.profileImage, email:me.email, company:me.buyer?.company, location:me.buyer?.locationText||me.locationText, language:me.language||'en', latitude:me.buyer?.latitude??me.latitude??0, longitude:me.buyer?.longitude??me.longitude??0 };
-        setSession(buyerSessionSeed);
-        setRequirementForm(prev=>({...prev,location:buyerSessionSeed.location||prev.location}));
-        const [listingRows, reqRows, orderRows, noteRows] = await Promise.all([
-          (await fetch('/api/listings',{credentials:'include'})).json(),
-          (await fetch('/api/requirements',{credentials:'include'})).json(),
-          (await fetch('/api/orders',{credentials:'include'})).json(),
-          (await fetch('/api/notifications',{credentials:'include'})).json(),
+        const [profileRes, listingsRes, requirementsRes, ordersRes, notificationsRes] = await Promise.all([
+          fetch("/api/profile/me", { credentials: "include" }),
+          fetch("/api/listings", { credentials: "include" }),
+          fetch("/api/requirements", { credentials: "include" }),
+          fetch("/api/orders", { credentials: "include" }),
+          fetch("/api/notifications", { credentials: "include" }),
         ]);
-        const farmerMap = new Map<string,Farmer>();
-        for(const x of (Array.isArray(listingRows)?listingRows:[])){ const fid=x.farmerId; const f=x.farmer||{}; const farmer=farmerMap.get(fid)||{id:fid,name:x.farmerName||`${f.firstName||''} ${f.lastName||''}`.trim(),phoneNumber:f.phone||'',location:f.farmer?.locationText||'Location unavailable',distanceKm:Number(x.distanceKm??0),rating:0,reviews:0,verified:true,avatar:'',farm:f.farmer?.farmName||'Farm',about:'',landAcres:f.farmer?.landAcres,listings:[]}; farmer.distanceKm=Number(x.distanceKm??farmer.distanceKm??0); farmer.listings.push({id:x.id,productId:x.productId,produce:x.product?.name||'Produce',availableQuantity:x.quantityAvailable,pricePerKg:x.price,unit:x.unit==='kg'?'kg':'kg',category:x.product?.category?.name||'Other'}); farmerMap.set(fid,farmer); }
-        farmerCatalog = Array.from(farmerMap.values());
-        setSession({...buyerSessionSeed});
-        setRequirements((Array.isArray(reqRows)?reqRows:[]).map((r:any)=>({id:r.code||r.id,backendId:r.id,code:r.code,buyerId:r.buyerId,createdAt:r.createdAt,status:r.status==='NOT_FOUND'?'Not Found':r.status==='CONFIRMED'?'Confirmed':r.status==='CLOSED'?'Closed':'Pending',items:(r.items||[]).map((i:any)=>({id:i.id,produce:i.product?.name||'',quantity:i.quantity,unit:i.unit,minPrice:i.minPrice,maxPrice:i.maxPrice,requiredBy:i.requiredBy||'',location:r.locationText}))})));
-        setOffers((Array.isArray(reqRows)?reqRows:[]).flatMap((r:any)=>(r.offers||[]).map((o:any)=>({id:o.id,requirementId:r.code||r.id,farmerId:o.farmerId,selectedListingIds:(o.lines||[]).map((l:any)=>l.listingId),selectedQuantities:Object.fromEntries((o.lines||[]).map((l:any)=>[l.listingId,l.quantity])),offeredPrice:Number(o.offeredPrice||0),originalPrice:Number(o.offeredPrice||0),buyerConfirmed:false,farmerConfirmed:o.status==='ACCEPTED',status:o.status==='COUNTERED'?'Negotiating':o.status==='ACCEPTED'?'Accepted':o.status==='REJECTED'?'Rejected':'Requested'}))));
-        setOrders((Array.isArray(orderRows)?orderRows:[]).map((o:any)=>{const i=o.items?.[0];return {id:o.code||o.id,backendId:o.id,type:'Marketplace',product:i?.product?.name||'Order',quantity:i?.quantity||0,unit:i?.unit==='kg'?'kg':'kg',cost:o.totalAmount||0,seller:`${o.farmer?.firstName||''} ${o.farmer?.lastName||''}`.trim(),sellerId:o.farmerId,buyer:name,buyerId:o.buyerId,deliveryDate:o.paymentDeadline||o.createdAt,status:o.status==='PROCESSING'?'Processing':o.status==='IN_TRANSIT'?'In Transit':o.status==='DELIVERED'?'Delivered':o.status==='CANCELLED'?'Closed':'Confirmed',createdAt:o.createdAt,paymentStatus:o.paymentStatus,paymentDeadline:o.paymentDeadline};}));
-        setNotifications((Array.isArray(noteRows)?noteRows:[]).map((n:any)=>({...n,type:'order'})));
+        if (!profileRes.ok) return;
+        const profile = await profileRes.json();
+        const user = profile.user;
+        setSession({ username: `${user.firstName} ${user.lastName}`.trim(), phoneNumber: user.phone ?? "", buyerId: user.roles?.find((r: {role:string}) => r.role === "BUYER")?.roleCode ?? "", profileImage: user.profileImage ?? undefined, email: user.email, company: user.buyer?.company ?? undefined, location: user.location ?? undefined, language: user.language ?? "English" });
+        if (listingsRes.ok) {
+          const data = await listingsRes.json();
+          const grouped = new Map<string, Farmer>();
+          for (const row of data.listings ?? []) {
+            const farmer = row.farmer;
+            const key = farmer.id;
+            const existing = grouped.get(key) ?? { id: key, name: `${farmer.firstName} ${farmer.lastName}`.trim(), phoneNumber: "", location: farmer.location ?? "", distanceKm: 0, rating: 0, reviews: 0, verified: farmer.farmer?.verified ?? false, avatar: farmer.profileImage ?? "", farm: farmer.farmer?.farmName ?? "", about: "", listings: [] };
+            existing.listings.push({ id: row.id, produce: row.product.name, availableQuantity: row.quantity, pricePerKg: row.price, unit: row.unit === "litre" ? "L" : (row.unit as RequirementUnit), catalogProductId: row.product.id, category: row.product.category?.name });
+            grouped.set(key, existing);
+          }
+          setFarmers([...grouped.values()]);
+        }
+        if (requirementsRes.ok) {
+          const data = await requirementsRes.json();
+          setRequirements((data.requirements ?? []).map((r: any) => ({
+            id: r.id, buyerId: r.buyerId, createdAt: r.createdAt, status: r.status === "BROWSE_PRODUCTS" ? "Draft" : r.status === "NOT_FOUND" ? "Not Found" : r.status === "CONFIRMED" ? "Confirmed" : r.status === "CLOSED" ? "Closed" : "Pending",
+            items: (r.items ?? []).map((i: any) => ({ id: i.id, produce: i.product?.name ?? "Produce", quantity: i.quantity, unit: i.unit === "litre" ? "L" : i.unit, minPrice: i.minPrice, maxPrice: i.maxPrice, requiredBy: i.requiredBy ?? "", location: i.location ?? r.location ?? "" }))
+          })));
+          const allOffers = (data.requirements ?? []).flatMap((r: any) => (r.offers ?? []).map((o: any) => ({ id:o.id, requirementId:r.id, farmerId:o.farmerId, selectedListingIds:(o.items??[]).map((x:any)=>x.listingId), offeredPrice:o.offeredPrice, originalPrice:o.originalPrice ?? o.offeredPrice, buyerConfirmed:o.buyerConfirmed, farmerConfirmed:o.farmerConfirmed, status:o.status === "ACCEPTED" ? "Accepted" : o.status === "REJECTED" ? "Rejected" : o.status === "COUNTERED" || o.status === "NEGOTIATING" ? "Negotiating" : "Requested" })));
+          setOffers(allOffers);
+        }
+        if (ordersRes.ok) {
+          const data = await ordersRes.json();
+          setOrders((data.orders ?? []).map((o:any) => ({ id:o.id, type:"Marketplace", product:o.items?.[0]?.product?.name ?? "Order", quantity:o.items?.reduce((s:number,i:any)=>s+i.quantity,0) ?? 0, unit:o.items?.[0]?.unit === "kg" ? "kg" : "kg", cost:o.total ?? 0, seller:`${o.seller?.firstName ?? "Farmer"} ${o.seller?.lastName ?? ""}`.trim(), sellerId:o.sellerId, buyer:session.username, buyerId:o.buyerId, deliveryDate:o.createdAt, status:o.status === "PROCESSING" ? "Processing" : o.status === "IN_TRANSIT" ? "In Transit" : o.status === "DELIVERED" ? "Delivered" : o.status === "CANCELLED" ? "Pending" : "Confirmed", createdAt:o.createdAt })));
+        }
+        if (notificationsRes.ok) {
+          const data = await notificationsRes.json();
+          setNotifications((data.notifications ?? []).map((n:any) => ({ id:n.id, title:n.title, message:n.message, type:n.type === "SHIPMENT" ? "shipment" : n.type === "ORDER" || n.type === "PAYMENT" ? "order" : "system", read:n.read, createdAt:n.createdAt })));
+        }
       } catch {}
-      const storedCart=window.localStorage.getItem('khetlink-buyer-cart'); if(storedCart) try{setCart(JSON.parse(storedCart));}catch{}
-    })();
+    };
+    bootstrap();
+
+    const storedCart =
+      window.localStorage.getItem(
+        "khetlink-buyer-cart",
+      );
+
+    if (storedCart) {
+      try {
+        setCart(
+          JSON.parse(storedCart) as CartItem[],
+        );
+      } catch {
+        // Ignore malformed local data.
+      }
+    }
   }, []);
 
   useEffect(() => {
-    const refresh=async()=>{try{const [reqRows,orderRows,noteRows]=await Promise.all([apiGet<any[]>('/requirements'),apiGet<any[]>('/orders'),apiGet<any[]>('/notifications')]);setRequirements((Array.isArray(reqRows)?reqRows:[]).map((r:any)=>({id:r.code||r.id,backendId:r.id,code:r.code,buyerId:r.buyerId,createdAt:r.createdAt,status:r.status==='NOT_FOUND'?'Not Found':r.status==='CONFIRMED'?'Confirmed':r.status==='CLOSED'?'Closed':r.status==='BROWSE_PRODUCTS'?'Searching':'Pending',items:(r.items||[]).map((i:any)=>({id:i.id,produce:i.product?.name||'',quantity:i.quantity,unit:i.unit,minPrice:i.minPrice,maxPrice:i.maxPrice,requiredBy:i.requiredBy||'',location:r.locationText}))})));setOffers((Array.isArray(reqRows)?reqRows:[]).flatMap((r:any)=>(r.offers||[]).map((o:any)=>({id:o.id,requirementId:r.code||r.id,farmerId:o.farmerId,selectedListingIds:[],selectedQuantities:{},offeredPrice:Number(o.offeredPrice||0),originalPrice:Number(o.offeredPrice||0),buyerConfirmed:false,farmerConfirmed:o.status==='ACCEPTED',status:o.status==='COUNTERED'?'Negotiating':o.status==='ACCEPTED'?'Accepted':o.status==='REJECTED'?'Rejected':'Requested'}))));setOrders((Array.isArray(orderRows)?orderRows:[]).map((o:any)=>{const i=o.items?.[0];return {id:o.code||o.id,backendId:o.id,type:'Marketplace',product:i?.product?.name||'Order',quantity:i?.quantity||0,unit:'kg',cost:o.totalAmount||0,seller:`${o.farmer?.firstName||''} ${o.farmer?.lastName||''}`.trim(),sellerId:o.farmerId,buyer:session.username,buyerId:o.buyerId,deliveryDate:o.paymentDeadline||o.createdAt,status:o.status==='PROCESSING'?'Processing':o.status==='IN_TRANSIT'?'In Transit':o.status==='DELIVERED'?'Delivered':o.status==='CANCELLED'?'Closed':'Confirmed',createdAt:o.createdAt,paymentStatus:o.paymentStatus,paymentDeadline:o.paymentDeadline};}));setNotifications((Array.isArray(noteRows)?noteRows:[]).map((n:any)=>({...n,type:'order'})));}catch{}};
-    const timer=window.setInterval(refresh,10000); return ()=>window.clearInterval(timer);
-  }, [session.username]);
+    window.localStorage.setItem(
+      "khetlink-buyer-cart",
+      JSON.stringify(cart),
+    );
+  }, [cart]);
 
   useEffect(() => {
     if (!toast) return;
@@ -565,9 +683,32 @@ export default function Buyer() {
      DERIVED PRODUCT CATALOG
   ------------------------------------------------------- */
 
-  const products = useMemo<Product[]>(() => farmerCatalog.flatMap((farmer) => farmer.listings.map((listing) => ({ id:`P-${listing.id}`,listingId:listing.id,productId:(listing as any).productId,farmerId:farmer.id,farmerName:farmer.name,name:listing.produce,category:listing.category||"Other",quantityAvailable:listing.availableQuantity,pricePerKg:listing.pricePerKg,rating:farmer.rating,reviews:farmer.reviews,distanceKm:farmer.distanceKm,deliveryTime:"1–2 days",image:productImage(listing.produce) }))), [session]);
+  const products = useMemo<Product[]>(() => {
+    const base = farmers.flatMap((farmer) =>
+      farmer.listings.map((listing) => ({
+        id: `P-${listing.id}`,
+        listingId: listing.id,
+        catalogProductId: (listing as any).catalogProductId,
+        farmerId: farmer.id,
+        farmerName: farmer.name,
+        name: listing.produce,
+        category: listing.category ?? "Other",
+        quantityAvailable:
+          listing.availableQuantity,
+        pricePerKg: listing.pricePerKg,
+        rating: farmer.rating,
+        reviews: farmer.reviews,
+        deliveryTime: "1–2 days",
+        image: getProductImage(listing.produce),
+      })),
+    );
 
-  const categories = useMemo(() => ["All","Vegetables","Fruits","Pulses","Grains","Spices","Flowers","Non-Edible","Herbs","Other","Livestock"], []);
+    return base;
+  }, [farmers]);
+
+  const categories = useMemo(() => {
+    return ["All", "Vegetables", "Fruits", "Herbs", "Organic"];
+  }, [products]);
 
   /* -------------------------------------------------------
      NOTIFICATIONS
@@ -658,12 +799,12 @@ export default function Buyer() {
     setCart((current) => {
       const existing = current.find(
         (item) =>
-          item.productId === product.productId && item.listingId === product.listingId,
+          item.productId === product.id,
       );
 
       if (existing) {
         return current.map((item) =>
-          item.productId === product.productId && item.listingId === product.listingId
+          item.productId === product.id
             ? {
                 ...item,
                 quantity: Math.min(
@@ -678,8 +819,7 @@ export default function Buyer() {
       return [
         {
           id: createId("CART"),
-          productId: product.productId || product.id,
-          listingId: product.listingId,
+          productId: product.id,
           farmerId: product.farmerId,
           farmerName: product.farmerName,
           product: product.name,
@@ -710,7 +850,7 @@ export default function Buyer() {
 
           const product = products.find(
             (productItem) =>
-              productItem.productId === item.productId && productItem.listingId === item.listingId,
+              productItem.id === item.productId,
           );
 
           const maximum =
@@ -743,19 +883,50 @@ export default function Buyer() {
     );
   }, [cart]);
 
-  const purchaseCart = async () => {
-    if (cart.length === 0) { showToast("Your cart is empty."); return; }
-    try {
-      const fuel=Number((await apiGet<any>('/fuel-price')).price)||0;
-      for(const item of cart){
-        const product=products.find(p=>p.productId===item.productId&&p.listingId===item.listingId);
-        if(!product) throw new Error(`Listing for ${item.product} is no longer available.`);
-        await apiPost('/orders',{farmerId:item.farmerId,listingId:item.listingId,productId:item.productId,quantity:item.quantity,unit:'kg',price:item.pricePerKg,logisticsFee:Math.max(0,fuel*(product ? (farmerCatalog.find(f=>f.id===item.farmerId)?.distanceKm||0) : 0))});
-      }
-      const rows=await apiGet<any[]>('/orders');
-      setOrders((Array.isArray(rows)?rows:[]).map((o:any)=>{const i=o.items?.[0];return {id:o.code||o.id,backendId:o.id,type:'Marketplace',product:i?.product?.name||'Order',quantity:i?.quantity||0,unit:'kg',cost:o.totalAmount||0,seller:`${o.farmer?.firstName||''} ${o.farmer?.lastName||''}`.trim(),sellerId:o.farmerId,buyer:session.username,buyerId:o.buyerId,deliveryDate:o.paymentDeadline||o.createdAt,status:o.status==='PROCESSING'?'Processing':o.status==='IN_TRANSIT'?'In Transit':o.status==='DELIVERED'?'Delivered':o.status==='CANCELLED'?'Closed':'Confirmed',createdAt:o.createdAt,paymentStatus:o.paymentStatus,paymentDeadline:o.paymentDeadline};}));
-      setCart([]); showToast("Order created. Payment is pending until you complete checkout.");
-    } catch(e) { showToast(e instanceof Error?e.message:"Unable to create order"); }
+  const purchaseCart = () => {
+    if (cart.length === 0) {
+      showToast("Your cart is empty.");
+      return;
+    }
+
+    const newOrders: Order[] = cart.map(
+      (item, index) => ({
+        id: `MKT-${Date.now()}-${index + 1}`,
+        type: "Marketplace",
+        product: item.product,
+        quantity: item.quantity,
+        unit: "kg",
+        cost:
+          item.quantity * item.pricePerKg,
+        seller: item.farmerName,
+        sellerId: item.farmerId,
+        buyer: session.username,
+        buyerId: session.buyerId,
+        deliveryDate: futureDate(2),
+        status: "Confirmed",
+        createdAt:
+          new Date().toISOString(),
+      }),
+    );
+
+    setOrders((current) => [
+      ...newOrders,
+      ...current,
+    ]);
+
+    newOrders.forEach((order) => {
+      pushNotification({
+        title: "Purchase confirmed",
+        message: `${order.product} purchase from ${order.seller} was confirmed.`,
+        type: "order",
+      });
+    });
+
+    setCart([]);
+
+    showToast(
+      "Purchase successful. Your orders are confirmed.",
+    );
   };
 
   /* -------------------------------------------------------
@@ -943,17 +1114,13 @@ export default function Buyer() {
   const submitRequirement = async (requirementId: string) => {
     const requirement = requirements.find(item => item.id === requirementId);
     if (!requirement || requirement.items.length === 0) { showToast("Add at least one requirement."); return; }
-    const item = requirement.items[0];
-    const product = products.find(p => p.name.toLowerCase() === item.produce.toLowerCase());
-    if (!product) { showToast("That product is not currently available in the marketplace."); return; }
     try {
-      const r = await (await fetch('/api/requirements',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({productId:product.productId||product.listingId,quantity:item.quantity,unit:item.unit||'kg',minPrice:item.minPrice,maxPrice:item.maxPrice,requiredBy:item.requiredBy,locationText:item.location,latitude:session.latitude??0,longitude:session.longitude??0})})).json();
-      if (!r.id && !r.code) throw new Error(r.error||'Unable to create requirement');
-      const backendId=String(r.id); const shortCode=String(r.code||r.id);
-      setRequirements(current=>current.map(x=>x.id===requirementId?{...x,id:shortCode,backendId,code:shortCode,status:'Pending'}:x));
-      try { const m=await (await fetch(`/api/requirements/${encodeURIComponent(backendId)}/matches`,{credentials:'include'})).json(); setRequirements(current=>current.map(x=>x.id===shortCode?{...x,status:m?.found?'Matched':'Not Found'}:x)); } catch {}
-      showToast("Requirement submitted. KhetLink is checking matching farmers.");
-    } catch(e) { showToast(e instanceof Error?e.message:"Unable to submit requirement"); }
+      const response = await fetch("/api/requirements", { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ location: requirement.items[0]?.location, items: requirement.items.map(i => ({ productId: products.find(p=>p.name.toLowerCase()===i.produce.toLowerCase())?.id?.replace(/^P-/ , "") ?? i.id, quantity:i.quantity, unit:i.unit === "L" ? "litre" : i.unit ?? "kg", minPrice:i.minPrice, maxPrice:i.maxPrice, requiredBy:i.requiredBy || undefined, location:i.location })) }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Unable to create requirement");
+      setRequirements(current => current.map(item => item.id === requirementId ? { ...item, id: payload.requirementId, status: payload.status === "NOT_FOUND" ? "Not Found" : "Pending" } : item));
+      showToast(payload.matchedFarmers?.length ? `${payload.matchedFarmers.length} matching farmers found.` : "No farmers currently match your requirements.");
+    } catch { showToast("Unable to create requirement. Please retry."); }
   };
 
   const getEligibleListings = (
@@ -1002,78 +1169,60 @@ export default function Buyer() {
     setSelectedListingQuantities((current) => ({ ...current, [farmerId]: { ...(current[farmerId] ?? {}), [listingId]: quantity } }));
   };
 
-  const sendProcurementRequest = (
-    requirement: Requirement,
-    farmer: Farmer,
+  const sendProcurementRequest = async (requirement: Requirement, farmer: Farmer) => {
+    const eligible = getEligibleListings(farmer, requirement);
+    const selected = selectedListingIds[farmer.id] ?? eligible.map(l => l.id);
+    const finalListingIds = selected.filter(id => eligible.some(l => l.id === id));
+    if (!finalListingIds.length) { showToast("Select at least one matching produce."); return; }
+    const quantities = Object.fromEntries(finalListingIds.map(id => {
+      const listing = farmer.listings.find(l=>l.id===id)!;
+      const req = requirement.items.find(i=>i.produce.toLowerCase()===listing.produce.toLowerCase());
+      return [id, selectedListingQuantities[farmer.id]?.[id] ?? Math.min(toKg(req?.quantity ?? listing.availableQuantity, req?.unit ?? "kg"), listing.availableQuantity)];
+    }));
+    const avg = finalListingIds.reduce((sum,id)=>sum+(farmer.listings.find(l=>l.id===id)?.pricePerKg??0),0)/finalListingIds.length;
+    try {
+      const response = await fetch(`/api/requirements/${requirement.id}/offer`, { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ farmerId:farmer.id, offeredPrice:Math.max(1,Math.round(avg)), items:finalListingIds.map(id=>({listingId:id,quantity:quantities[id]})) }) });
+      if (!response.ok) throw new Error();
+      const payload=await response.json();
+      const newOffer: FarmerOffer={ id:payload.offer.id, requirementId:requirement.id, farmerId:farmer.id, selectedListingIds:finalListingIds, selectedQuantities:quantities, offeredPrice:payload.offer.offeredPrice, originalPrice:payload.offer.originalPrice, buyerConfirmed:false, farmerConfirmed:false, status:"Requested" };
+      setOffers(current=>[newOffer,...current.filter(o=>!(o.requirementId===requirement.id&&o.farmerId===farmer.id))]);
+      showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
+    } catch { showToast("Unable to send request. Please retry."); }
+  };
+
+  const negotiateOffer = async (requirementId: string, farmerId: string, price: number) => {
+    const negotiatedPrice = Math.max(1, Number(price));
+    try {
+      const response=await fetch(`/api/requirements/${requirementId}/counter`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({farmerId,price:negotiatedPrice})});
+      if(!response.ok) throw new Error();
+      setOffers(current=>current.map(item=>item.requirementId===requirementId&&item.farmerId===farmerId?{...item,offeredPrice:negotiatedPrice,buyerConfirmed:false,farmerConfirmed:false,status:"Negotiating"}:item));
+      showToast("Negotiated price sent. Waiting for the farmer…");
+    } catch { showToast("Unable to send the negotiated price. Please retry."); }
+  };
+
+  const farmerAcceptOffer = (
+    requirementId: string,
+    farmerId: string,
   ) => {
-    const eligible =
-      getEligibleListings(
-        farmer,
-        requirement,
-      );
+    // Used by the existing procurement/matched-farmer flow. Marketplace cards
+    // use the automatic farmer-response event above and never expose this action.
+    const offer = offers.find((item) => item.requirementId === requirementId && item.farmerId === farmerId);
+    if (!offer) return;
+    setOffers((current) => current.map((item) => item.requirementId === requirementId && item.farmerId === farmerId ? { ...item, farmerConfirmed: true, status: item.buyerConfirmed ? "Accepted" : "Negotiating" } : item));
+  };
 
-    const selected =
-      selectedListingIds[farmer.id] ??
-      [];
-
-    const finalListingIds =
-      selected.length > 0
-        ? selected.filter((id) =>
-            eligible.some(
-              (listing) =>
-                listing.id === id,
-            ),
-          )
-        : eligible.map(
-            (listing) => listing.id,
-          );
-
-    if (finalListingIds.length === 0) {
-      showToast(
-        "Select at least one matching produce.",
-      );
-      return;
-    }
-
-    const selectedListings =
-      farmer.listings.filter((listing) =>
-        finalListingIds.includes(
-          listing.id,
-        ),
-      );
-
-    const averagePrice =
-      selectedListings.reduce(
-        (sum, listing) =>
-          sum + listing.pricePerKg,
-        0,
-      ) /
-      Math.max(
-        selectedListings.length,
-        1,
-      );
-
-    const existingOffer =
-      offers.find(
-        (offer) =>
-          offer.requirementId ===
-            requirement.id &&
-          offer.farmerId === farmer.id,
-      );
-
-    const chosen = finalListingIds[0];
-    const chosenListing = selectedListings[0];
-    const chosenQuantity = Math.min(Number(selectedListingQuantities[farmer.id]?.[chosen] ?? chosenListing.availableQuantity), chosenListing.availableQuantity);
-    (async()=>{
-      try {
-        const r=await (await fetch('/api/offers',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({requirementId:requirement.backendId,farmerId:farmer.id,listingId:chosen,quantity:chosenQuantity,offeredPrice:averagePrice})})).json();
-        if(!r.id) throw new Error(r.error||'Unable to send request');
-        const newOffer: FarmerOffer={id:r.id,requirementId:requirement.id,farmerId:farmer.id,selectedListingIds:finalListingIds,selectedQuantities:{[chosen]:chosenQuantity},offeredPrice:Number(r.offeredPrice||averagePrice),originalPrice:Math.round(averagePrice),buyerConfirmed:false,farmerConfirmed:false,status:'Requested'};
-        setOffers(current=>existingOffer?current.map(o=>o.id===existingOffer.id?newOffer:o):[newOffer,...current]);
-        pushNotification({title:'Procurement request sent',message:`Your request was sent to ${farmer.name}.`,type:'order'});
-        showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
-      } catch(e) { showToast(e instanceof Error?e.message:'Unable to send request'); }
-    })();
+  const finalizeProcurementOrder = async (requirementId: string, farmerId: string) => {
+    const offer = offers.find(o=>o.requirementId===requirementId&&o.farmerId===farmerId);
+    const farmer = farmers.find(f=>f.id===farmerId);
+    if(!offer||!farmer){showToast("Offer details are unavailable.");return;}
+    const items=offer.selectedListingIds.map(id=>{const l=farmer.listings.find(x=>x.id===id);return l?{productId:(products.find(p=>p.listingId===id)?.id?.replace(/^P-/ , "") ?? ""),listingId:id,quantity:offer.selectedQuantities?.[id]??l.availableQuantity,unit:l.unit,unitPrice:offer.offeredPrice}:null}).filter(Boolean) as any[];
+    try{
+      const response=await fetch("/api/orders",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({sellerId:farmerId,requirementId,items,distanceKm:0})});
+      const payload=await response.json(); if(!response.ok) throw new Error(payload.error||"Order creation failed");
+      setOrders(current=>[{id:payload.order.id,type:"Marketplace",product:items[0]?.productId??"Order",quantity:items.reduce((s,i)=>s+i.quantity,0),unit:"kg",cost:payload.order.total,seller:farmer.name,sellerId:farmerId,buyer:session.username,buyerId:session.buyerId,deliveryDate:new Date().toISOString(),status:"Confirmed",createdAt:new Date().toISOString()},...current]);
+      setOffers(current=>current.map(o=>o.id===offer.id?{...o,buyerConfirmed:true,farmerConfirmed:true,status:"Accepted"}:o));
+      showToast("Order created. Payment is due within one hour.");
+    }catch(e:any){showToast(e?.message||"Unable to create order.");}
   };
 
   const clearMarketplaceOfferAfterDelay = (requirementId: string, farmerId: string) => {
@@ -1090,28 +1239,15 @@ export default function Buyer() {
     }, 4500);
   };
 
-  const negotiateOffer = (requirementId: string, farmerId: string, price: number) => {
-    const offer=offers.find(o=>o.requirementId===requirementId&&o.farmerId===farmerId); if(!offer){showToast('Send a request first.');return;}
-    (async()=>{try{const r=await (await fetch(`/api/offers/${encodeURIComponent(offer.id)}`,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'COUNTERED',offeredPrice:price})})).json();if(!r.id)throw new Error(r.error||'Unable to negotiate');setOffers(c=>c.map(o=>o.id===offer.id?{...o,offeredPrice:price,status:'Negotiating'}:o));showToast('Counter price sent to the farmer.');}catch(e){showToast(e instanceof Error?e.message:'Unable to negotiate');}})();
-  };
-
-  const farmerAcceptOffer = (_requirementId: string, _farmerId: string) => { showToast('Farmer acceptance is recorded by the backend.'); };
-
-  const finalizeProcurementOrder = (requirementId: string, farmerId: string) => {
-    const offer=offers.find(o=>o.requirementId===requirementId&&o.farmerId===farmerId); if(!offer){showToast('Offer not found.');return;}
-    (async()=>{try{const r=await (await fetch(`/api/offers/${encodeURIComponent(offer.id)}`,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'ACCEPTED'})})).json();if(!r.id)throw new Error(r.error||'Unable to confirm offer');setOffers(c=>c.map(o=>o.id===offer.id?{...o,status:'Accepted',farmerConfirmed:true,buyerConfirmed:true}:o));showToast('Offer confirmed. Order created and payment is pending.');}catch(e){showToast(e instanceof Error?e.message:'Unable to confirm offer');}})();
-  };
-
-  const declineOffer = (requirementId: string, farmerId: string) => {
-    const farmer = farmerCatalog.find((item) => item.id === farmerId);
-    const offer=offers.find(item=>item.requirementId===requirementId&&item.farmerId===farmerId); if(offer) fetch(`/api/offers/${encodeURIComponent(offer.id)}`,{method:"PATCH",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"REJECTED"})}).catch(()=>{}); setOffers((current) => current.map((item) => item.requirementId === requirementId && item.farmerId === farmerId ? { ...item, status: "Rejected", buyerConfirmed: false, farmerConfirmed: false } : item));
-    clearMarketplaceOfferAfterDelay(requirementId, farmerId);
-    pushNotification({ title: "Negotiation declined", message: `You declined the offer from ${farmer?.name ?? "farmer"}.`, type: "order" });
+  const declineOffer = async (requirementId: string, farmerId: string) => {
+    const farmer = farmers.find(item => item.id === farmerId);
+    await fetch(`/api/requirements/${requirementId}/decline`, { method:"POST", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({farmerId}) }).catch(()=>{});
+    setOffers(current=>current.map(item=>item.requirementId===requirementId&&item.farmerId===farmerId?{...item,status:"Rejected",buyerConfirmed:false,farmerConfirmed:false}:item));
+    pushNotification({title:"Negotiation declined",message:`You declined the offer from ${farmer?.name??"farmer"}.`,type:"order"});
     showToast("Offer declined.");
   };
 
   const closeRequirement = (requirementId: string) => {
-  const requirement=requirements.find(r=>r.id===requirementId); if(requirement?.backendId) fetch(`/api/requirements/${encodeURIComponent(requirement.backendId)}`,{method:"PATCH",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"CLOSED"})}).catch(()=>{});
   setRequirements((current) =>
     current.map((requirement) =>
       requirement.id === requirementId
@@ -1136,13 +1272,22 @@ const dismissRequirement = (requirementId: string) => {
 };
 
   const submitFarmerReview = (order: Order, rating: number, comment: string) => {
-    const trimmed=comment.trim(); if(!rating||!trimmed){showToast("Please select a rating and write a review.");return false;}
-    if(farmerReviews.some(r=>r.orderId===order.id)){showToast("You have already reviewed this order.");return false;}
-    (async()=>{try{await (await fetch('/api/reviews',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:order.id,reviewedId:order.sellerId,rating,text:trimmed})})).json();}catch{}})();
-    setFarmerReviews(current=>[{id:createId("REVIEW"),farmerId:order.sellerId,orderId:order.id,buyerName:session.username,rating,comment:trimmed,createdAt:new Date().toISOString()},...current]); showToast("Review submitted successfully."); return true;
+    const trimmed = comment.trim();
+    if (!rating || !trimmed) {
+      showToast("Please select a rating and write a review.");
+      return false;
+    }
+    if (farmerReviews.some((review) => review.orderId === order.id)) {
+      showToast("You have already reviewed this order.");
+      return false;
+    }
+    setFarmerReviews((current) => [
+      { id: createId("REVIEW"), farmerId: order.sellerId, orderId: order.id, buyerName: session.username, rating, comment: trimmed, createdAt: new Date().toISOString() },
+      ...current,
+    ]);
+    showToast("Review submitted successfully.");
+    return true;
   };
-
-  const payOrder = async (order: Order, provider: string) => { try { const r=await fetch(`/api/orders/${encodeURIComponent(order.backendId||order.id)}/pay`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider})}); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Payment failed'); setOrders(cur=>cur.map(o=>o.id===order.id?{...o,paymentStatus:'PAID'}:o)); showToast('Payment successful. Logistics providers are being notified.'); } catch(e){showToast(e instanceof Error?e.message:'Payment failed');} };
 
   /* -------------------------------------------------------
      ORDER FILTERING
@@ -1370,11 +1515,17 @@ const dismissRequirement = (requirementId: string) => {
       marketplaceSearch,
     ]);
 
-  const addMarketplaceProductToRequirement = (product: Product, quantity: number, unit: RequirementUnit) => {
-    const safeQuantity=Math.max(minimumQuantityForUnit(unit),Math.min(fromKg(product.quantityAvailable,unit),Math.round(quantity)));
-    setRequirementForm({id:'',produce:product.name,quantity:safeQuantity,unit,minPrice:Math.max(0,Math.round(product.pricePerKg*0.9)),maxPrice:Math.round(product.pricePerKg*1.1),requiredBy:futureDate(7),location:session.location||''});
-    setActiveTab('Marketplace');
-    showToast(`${product.name} added to your procurement requirement.`);
+  const addMarketplaceProductToRequirement = async (product: Product, quantity: number, unit: RequirementUnit) => {
+    const farmer = farmers.find(item => item.id === product.farmerId); if (!farmer || !product.catalogProductId) return;
+    const safeQuantity = Math.min(fromKg(product.quantityAvailable, unit), Math.max(minimumQuantityForUnit(unit), quantity));
+    try {
+      const reqRes=await fetch("/api/requirements",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:session.location,items:[{productId:product.catalogProductId,quantity:safeQuantity,unit:unit === "L" ? "litre" : unit,minPrice:product.pricePerKg,maxPrice:product.pricePerKg,location:session.location}]})});
+      const reqData=await reqRes.json(); if(!reqRes.ok) throw new Error();
+      const offerRes=await fetch(`/api/requirements/${reqData.requirementId}/offer`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({farmerId:farmer.id,offeredPrice:product.pricePerKg,items:[{listingId:product.listingId,quantity:safeQuantity}]})});
+      const offerData=await offerRes.json(); if(!offerRes.ok) throw new Error();
+      setOffers(current=>[{id:offerData.offer.id,requirementId:reqData.requirementId,farmerId:farmer.id,productId:product.id,selectedListingIds:[product.listingId],selectedQuantities:{[product.listingId]:safeQuantity},requestedQuantity:safeQuantity,requestedUnit:unit,offeredPrice:offerData.offer.offeredPrice,originalPrice:offerData.offer.originalPrice,buyerConfirmed:false,farmerConfirmed:false,status:"Requested"},...current]);
+      showToast(`Request sent to ${farmer.name}. Waiting for farmer response…`);
+    } catch { showToast("Unable to send request. Please retry."); }
   };
 
   /* -------------------------------------------------------
@@ -1430,7 +1581,7 @@ const dismissRequirement = (requirementId: string) => {
               orders={orders}
               requirements={requirements}
               farmers={
-                farmerCatalog
+                farmers
               }
               totalSpend={
                 totalSpend
@@ -1475,14 +1626,14 @@ const dismissRequirement = (requirementId: string) => {
                 setMarketplaceSearch
               }
               onProduct={(product) => {
-                const farmer = farmerCatalog.find((item) => item.id === product.farmerId);
+                const farmer = farmers.find((item) => item.id === product.farmerId);
                 if (farmer) setSelectedFarmer(farmer);
               }}
               procurement={{
                 form: requirementForm,
                 draft: draftRequirement,
                 requirements,
-                farmers: farmerCatalog,
+                farmers: farmers,
                 offers,
                 selectedListingIds,
                 selectedListingQuantities,
@@ -1530,7 +1681,6 @@ const dismissRequirement = (requirementId: string) => {
                 setOrderSearch
               }
               onSubmitReview={submitFarmerReview}
-              onPay={payOrder}
             />
           )}
 
@@ -1586,7 +1736,11 @@ const dismissRequirement = (requirementId: string) => {
 
           {activeTab ===
             "Help" && (
-            <Help onNavigate={navigate} onSupport={async(subject,message)=>{try{await fetch('/api/support',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject,message})});showToast('Support ticket submitted.');}catch{showToast('Unable to submit support ticket.');}}} />
+            <Help
+              onNavigate={
+                navigate
+              }
+            />
           )}
 
           {activeTab ===
@@ -1838,8 +1992,6 @@ function Header({
               </div>
             )}
           </div>
-
-          <div style={{marginRight:12,display:'flex',alignItems:'center'}}><LanguageSelector compact /></div>
 
           <button
             type="button"
@@ -2464,14 +2616,17 @@ function Marketplace({
   procurement: Parameters<typeof Procurement>[0];
   onAddToRequest: (product: Product, quantity: number, unit: RequirementUnit) => void;
 }) {
-  const [sortBy, setSortBy] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState("relevance");
   const displayProducts = useMemo(() => {
-    const list=[...products]; const deliveryDays=(v:string)=>Number(v.match(/\d+/)?.[0]??99);
-    const defaults=['price','rating','quantity','delivery','location','land'];
-    const priority=[...sortBy,...defaults.filter(x=>!sortBy.includes(x))];
-    list.sort((a,b)=>{for(const key of priority){let d=0;if(key==='price')d=a.pricePerKg-b.pricePerKg;else if(key==='rating')d=(b.rating-a.rating)||(b.reviews-a.reviews);else if(key==='quantity')d=b.quantityAvailable-a.quantityAvailable;else if(key==='delivery')d=deliveryDays(a.deliveryTime)-deliveryDays(b.deliveryTime);else if(key==='location')d=(a.distanceKm??999999)-(b.distanceKm??999999);if(d!==0)return d;}return a.name.localeCompare(b.name);}); return list;
+    const list = [...products];
+    const deliveryDays = (value: string) => Number(value.match(/\d+/)?.[0] ?? 99);
+    if (sortBy === "delivery") list.sort((a, b) => deliveryDays(a.deliveryTime) - deliveryDays(b.deliveryTime));
+    if (sortBy === "produce") list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "rating") list.sort((a, b) => b.rating - a.rating || b.reviews - a.reviews);
+    if (sortBy === "price") list.sort((a, b) => a.pricePerKg - b.pricePerKg);
+    if (sortBy === "quantity") list.sort((a, b) => b.quantityAvailable - a.quantityAvailable);
+    return list;
   }, [products, sortBy]);
-  const toggleSort=(key:string)=>setSortBy(cur=>cur.includes(key)?cur.filter(x=>x!==key):[...cur,key]);
 
   return (
     <div className="buyer-main marketplace-main">
@@ -2544,11 +2699,11 @@ function Marketplace({
 
         <div className="marketplace-sort-row">
         <span>Sort by</span>
-        <button type="button" className={sortBy.includes("delivery") ? "active" : ""} onClick={() => toggleSort("delivery")}>Delivery Time</button>
-        <button type="button" className={sortBy.includes("produce") ? "active" : ""} onClick={() => toggleSort("produce")}>Produce</button>
-        <button type="button" className={sortBy.includes("rating") ? "active" : ""} onClick={() => toggleSort("rating")}>Ratings</button>
-        <button type="button" className={sortBy.includes("price") ? "active" : ""} onClick={() => toggleSort("price")}>Price</button>
-        <button type="button" className={sortBy.includes("quantity") ? "active" : ""} onClick={() => toggleSort("quantity")}>Quantity Available</button>
+        <button type="button" className={sortBy === "delivery" ? "active" : ""} onClick={() => setSortBy("delivery")}>Delivery Time</button>
+        <button type="button" className={sortBy === "produce" ? "active" : ""} onClick={() => setSortBy("produce")}>Produce</button>
+        <button type="button" className={sortBy === "rating" ? "active" : ""} onClick={() => setSortBy("rating")}>Ratings</button>
+        <button type="button" className={sortBy === "price" ? "active" : ""} onClick={() => setSortBy("price")}>Price</button>
+        <button type="button" className={sortBy === "quantity" ? "active" : ""} onClick={() => setSortBy("quantity")}>Quantity Available</button>
         </div>
       </div>
 
@@ -2757,7 +2912,7 @@ function ProductCard({
                 <span className="farmer-response-waiting">Waiting for farmer response…</span>
               )}
             </div>
-            <AcceptanceStatus farmer={farmerCatalog.find((item) => item.id === product.farmerId)!} offer={visibleOffer} />
+            <AcceptanceStatus farmer={farmers.find((item) => item.id === product.farmerId)!} offer={visibleOffer} />
           </div>
         )}
       </div>
@@ -2840,9 +2995,6 @@ function Procurement({
     farmer: Farmer,
   ) => void;
 }) {
-  const [produceOpen,setProduceOpen]=useState(false);
-  const produceOptions=[...new Set(farmers.flatMap(f=>f.listings.map(l=>l.produce)))].sort();
-
   const submittedRequirements =
     requirements.filter(
       (requirement) =>
@@ -2901,8 +3053,10 @@ function Procurement({
 
         <div className="procurement-input-grid">
           <Field label="Produce">
-            <div style={{position:'relative'}}><input value={form.produce} onFocus={()=>setProduceOpen(true)} onChange={(event)=>{onFormChange({...form,produce:event.target.value});setProduceOpen(true)}} onBlur={()=>setTimeout(()=>setProduceOpen(false),150)} placeholder="Type or select produce"/>
-            {produceOpen&&<div style={{position:'absolute',zIndex:50,left:0,right:0,top:'calc(100% + 4px)',background:'#fff',border:'1px solid #d7e0d4',borderRadius:10,boxShadow:'0 12px 24px rgba(0,0,0,.12)',maxHeight:220,overflow:'auto'}}>{produceOptions.filter(p=>p.toLowerCase().includes(form.produce.toLowerCase())).map(p=><button type="button" key={p} onMouseDown={()=>{onFormChange({...form,produce:p});setProduceOpen(false)}} style={{display:'flex',alignItems:'center',gap:8,width:'100%',border:0,background:'#fff',padding:'9px 11px',textAlign:'left',cursor:'pointer'}}><img src={productImage(p)} alt="" style={{width:28,height:28,objectFit:'cover',borderRadius:6}}/><span>{p}</span></button>)}</div>}</div>
+            <input list="buyer-produce-options" value={form.produce} onChange={(event) => onFormChange({ ...form, produce: event.target.value })} placeholder="Type or select produce" />
+            <datalist id="buyer-produce-options">
+              {[...new Set(farmers.flatMap((farmer) => farmer.listings.map((listing) => listing.produce)).concat(["Mango", "Banana", "Apple", "Orange", "Grapes"]))].map((produce) => <option value={produce} key={produce} />)}
+            </datalist>
           </Field>
 
           <Field label="Quantity">
@@ -2910,7 +3064,7 @@ function Procurement({
               <button type="button" onClick={() => onFormChange({ ...form, quantity: Math.max(minimumQuantityForUnit(form.unit ?? "kg"), form.quantity - 1) })}><Minus size={14} /></button>
               <input type="number" min={minimumQuantityForUnit(form.unit ?? "kg")} value={form.quantity === 0 ? "" : form.quantity} onChange={(event) => { const raw = event.target.value; onFormChange({ ...form, quantity: raw === "" ? 0 : Number(raw) }); }} onBlur={() => onFormChange({ ...form, quantity: Math.max(minimumQuantityForUnit(form.unit ?? "kg"), Number(form.quantity) || minimumQuantityForUnit(form.unit ?? "kg")) })} />
               <button type="button" onClick={() => onFormChange({ ...form, quantity: Math.min(fromKg(999999, form.unit ?? "kg"), form.quantity + 1) })}><Plus size={14} /></button>
-              <select value={form.unit ?? "kg"} onChange={(event) => { const nextUnit = event.target.value as RequirementUnit; const kg = toKg(form.quantity, form.unit ?? "kg"); onFormChange({ ...form, unit: nextUnit, quantity: Math.max(minimumQuantityForUnit(nextUnit), Math.round(fromKg(kg, nextUnit))) }); }}><option value="kg">kg</option><option value="L">L</option><option value="ton">ton</option><option value="dozen">dozen</option></select>
+              <select value={form.unit ?? "kg"} onChange={(event) => { const nextUnit = event.target.value as RequirementUnit; const kg = toKg(form.quantity, form.unit ?? "kg"); onFormChange({ ...form, unit: nextUnit, quantity: Math.max(minimumQuantityForUnit(nextUnit), Number(fromKg(kg, nextUnit).toFixed(2))) }); }}><option value="kg">kg</option><option value="L">L</option><option value="ton">ton</option><option value="dozen">dozen</option></select>
             </div>
           </Field>
 
@@ -3063,7 +3217,7 @@ function Procurement({
                   className="requirement-item"
                   key={item.id}
                 >
-                 <div className="requirement-product-icon"><img src={productImage(item.produce)} alt={item.produce}/></div>
+                 <div className="requirement-product-icon"><img src={getProductImage(item.produce)} alt={item.produce}/></div>
                   <div className="requirement-item-copy">
                     <strong>
                       {
@@ -3504,8 +3658,6 @@ function MatchedFarmerCard({
   onConfirm: () => void;
   onDecline: () => void;
 }) {
-  const [fuelPrice,setFuelPrice]=useState(0);
-  useEffect(()=>{apiGet<any>('/fuel-price').then(d=>setFuelPrice(Number(d.price)||0)).catch(()=>{});},[]);
   const eligible =
     farmer.listings.filter(
       (listing) =>
@@ -3568,7 +3720,6 @@ function MatchedFarmerCard({
           }{" "}
           km
         </small>
-        <small><MapPin size={12}/> Base logistics fee: {fuelPrice>0?formatCurrency(fuelPrice*farmer.distanceKm):'—'} · {farmer.landAcres?`${farmer.landAcres} acres`:''}</small>
 
         <div className="farmer-rating">
           <Star
@@ -3819,14 +3970,12 @@ function Orders({
   onFilter,
   onSearch,
   onSubmitReview,
-  onPay,
 }: {
   orders: Order[];
   allOrders: Order[];
   filter: string;
   search: string;
   onSubmitReview: (order: Order, rating: number, comment: string) => boolean;
-  onPay: (order: Order, provider: string) => void;
   onFilter: (
     value: string,
   ) => void;
@@ -3847,7 +3996,6 @@ function Orders({
   const [reviewOrderId, setReviewOrderId] = useState<string | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
 
   return (
     <div className="buyer-main orders-main">
@@ -3868,7 +4016,7 @@ function Orders({
         </div>
 
         <div className="orders-export-actions">
-          <button type="button" className="buyer-outline-button" onClick={() => selectedOrder && downloadOrderPdf(selectedOrder)}><Download size={16} /> Export Order PDF</button>
+          <button type="button" className="buyer-outline-button" onClick={() => exportOrdersPdf(allOrders, selectedOrder)}><Download size={16} /> Export Order PDF</button>
           <button type="button" className="buyer-primary-button" onClick={() => exportOrdersPdf(allOrders)}><Download size={16} /> Export All</button>
         </div>
       </div>
@@ -3926,7 +4074,6 @@ function Orders({
             <div className="live-map order-live-map"><MapIcon size={28} /><strong>{selectedOrder.id}</strong><span>Live Order Map</span><small>{selectedOrder.seller} → {selectedOrder.buyer}</small></div>
             <h3>Live Order Status</h3>
             <div className="selected-order-status"><StatusBadge status={selectedOrder.status} /><strong>{selectedOrder.product}</strong><span>{selectedOrder.quantity} kg · {formatCurrency(selectedOrder.cost)}</span></div>
-            <div style={{marginTop:10,padding:10,borderRadius:10,background:'#f7faf5',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}><span><strong>Payment:</strong> {selectedOrder.paymentStatus==='PAID'?'Paid':'Pending'}</span>{selectedOrder.paymentStatus!=='PAID'&&<button type="button" className="buyer-primary-button small" onClick={()=>setPaymentOrderId(selectedOrder.id)}>Pay</button>}</div>
             {selectedOrder.status !== "Pending" && (
               <button type="button" className="buyer-outline-button small order-review-trigger" onClick={() => { setReviewOrderId(selectedOrder.id); setReviewRating(0); setReviewComment(""); }}>Write Review</button>
             )}
@@ -3966,19 +4113,6 @@ function Orders({
                 <div className="modal-actions">
                   <button type="button" className="buyer-outline-button small" onClick={() => setReviewOrderId(null)}>Cancel</button>
                   <button type="button" className="buyer-primary-button small" onClick={() => { if (onSubmitReview(selectedOrder, reviewRating, reviewComment)) { setReviewOrderId(null); setReviewRating(0); setReviewComment(""); } }}>Submit Review</button>
-                </div>
-              </div>
-            )}
-            {paymentOrderId === selectedOrder.id && (
-              <div className="buyer-modal-backdrop" role="dialog" aria-modal="true">
-                <div className="buyer-modal-card">
-                  <button type="button" className="buyer-modal-close" onClick={()=>setPaymentOrderId(null)} aria-label="Close"><X size={18}/></button>
-                  <p className="eyebrow green">DEMO PAYMENT</p>
-                  <h3>Choose payment method</h3>
-                  <p>This is a demonstration checkout. No real payment is processed.</p>
-                  <div className="payment-choice-grid">
-                    {[['Razorpay','Card / Netbanking / UPI'],['UPI','UPI app'],['QR','Scan QR code']].map(([provider,desc])=><button key={provider} type="button" className="payment-choice" onClick={()=>{setPaymentOrderId(null);onPay(selectedOrder,provider);}}><strong>{provider}</strong><span>{desc}</span></button>)}
-                  </div>
                 </div>
               </div>
             )}
@@ -4789,7 +4923,13 @@ function Kpi({
    HELP
 ========================================================= */
 
-function Help({onNavigate,onSupport}:{onNavigate:(view:View)=>void;onSupport:(subject:string,message:string)=>void}) {
+function Help({
+  onNavigate,
+}: {
+  onNavigate: (
+    view: View,
+  ) => void;
+}) {
   return (
     <div className="buyer-main help-main">
       <div className="page-heading">
@@ -4855,7 +4995,12 @@ function Help({onNavigate,onSupport}:{onNavigate:(view:View)=>void;onSupport:(su
           </div>
         </div>
 
-        <button type="button" className="buyer-outline-button" onClick={()=>{const subject=window.prompt('Support subject','Order discrepancy')||'';const message=window.prompt('Describe the discrepancy')||'';if(subject&&message)onSupport(subject,message);}}>Contact Support</button>
+        <button
+          type="button"
+          className="buyer-outline-button"
+        >
+          Contact Support
+        </button>
       </section>
     </div>
   );
@@ -5035,14 +5180,33 @@ function Profile({
     );
   };
 
-  const saveProfile = async () => {
-    const nextSession: BuyerSession = {...session,username:username.trim()||session.username,phoneNumber:phone.trim(),email:email.trim()||undefined,company:company.trim()||undefined,location:location.trim()||undefined,language,profileImage:image||undefined};
-    try {
-      const res = await fetch('/api/profile',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:'BUYER',company:nextSession.company,buyerType:'Buyer',locationText:nextSession.location||'',latitude:session.latitude??0,longitude:session.longitude??0,profileImage:nextSession.profileImage,language})});
-      const data=await res.json(); if(!res.ok) throw new Error(data.error||'Unable to save profile');
-      onSessionChange(nextSession); showToast('Profile updated successfully.');
-      window.dispatchEvent(new CustomEvent('khetlink-profile-change'));
-    } catch(e) { showToast(e instanceof Error?e.message:'Unable to save profile.'); }
+  const saveProfile = () => {
+    const nextSession: BuyerSession =
+      {
+        ...session,
+        username:
+          username.trim() ||
+          session.username,
+        phoneNumber:
+          phone.trim(),
+        email:
+          email.trim() ||
+          undefined,
+        company:
+          company.trim() ||
+          undefined,
+        location:
+          location.trim() ||
+          undefined,
+        language,
+        profileImage:
+          image ||
+          undefined,
+      };
+
+    fetch("/api/profile/me", { method:"PATCH", credentials:"include", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:nextSession.email, phone:nextSession.phoneNumber, profileImage:nextSession.profileImage, location:nextSession.location, language:nextSession.language, company:nextSession.company }) })
+      .then(async r=>{ if(!r.ok) throw new Error(); onSessionChange(nextSession); showToast("Profile updated successfully."); })
+      .catch(()=>showToast("Unable to update profile. Please retry."));
   };
 
   const totalOrders =
@@ -5221,10 +5385,51 @@ function Profile({
             <Field
               label="Location"
             >
-              <div style={{display:'flex',gap:8,alignItems:'center'}}><input value={location} onChange={(event)=>setLocation(event.target.value)} placeholder="City, State, location details"/><LocationButton onLocation={(x)=>{setLocation(x.text);onSessionChange({...session,location:x.text,latitude:x.latitude,longitude:x.longitude});}}/></div>
+              <input
+                value={
+                  location
+                }
+                onChange={(
+                  event,
+                ) =>
+                  setLocation(
+                    event
+                      .target
+                      .value,
+                  )
+                }
+                placeholder="City, State"
+              />
             </Field>
 
-            <Field label="Language"><LanguageSelector compact /></Field>
+            <Field
+              label="Language"
+            >
+              <select
+                value={
+                  language
+                }
+                onChange={(
+                  event,
+                ) =>
+                  setLanguage(
+                    event
+                      .target
+                      .value,
+                  )
+                }
+              >
+                <option>
+                  English
+                </option>
+                <option>
+                  Hindi
+                </option>
+                <option>
+                  Marathi
+                </option>
+              </select>
+            </Field>
           </div>
 
           <button

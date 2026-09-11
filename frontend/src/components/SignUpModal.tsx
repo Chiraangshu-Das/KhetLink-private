@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { User2Icon, Mail, Phone, Lock, Eye, EyeOff, X, } from 'lucide-react';
+import { User2Icon, Mail, Phone, Lock, Eye, EyeOff, X, ChevronDown } from 'lucide-react';
 import './SignupModal.css';
 
 interface SignupModalProps {
   onClose: () => void;
   onLogin?: () => void;
+  onSuccess?: (user: { firstName?: string; lastName?: string; profileImage?: string }) => void;
 }
 
 interface FieldErrors {
@@ -21,6 +22,7 @@ interface FieldErrors {
 export default function SignupModal({
   onClose,
   onLogin,
+  onSuccess,
 }: SignupModalProps) {
 
   const [showPassword, setShowPassword] = useState(false);
@@ -35,9 +37,9 @@ export default function SignupModal({
     email: '',
     countryCode: '+91',
     phone: '',
+    profileImage: '',
     password: '',
     confirmPassword: '',
-    profileImage: '',
   });
 
   const set = (field: keyof typeof form) =>
@@ -58,7 +60,7 @@ export default function SignupModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: `${form.countryCode}${form.phone}` }),
       });
 
       const data = await res.json();
@@ -72,7 +74,9 @@ export default function SignupModal({
         return;
       }
 
-      window.location.href = '/';
+      // Stay on the landing page after signup and update its auth controls.
+      onSuccess?.(data.user ?? {});
+      onClose();
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {
@@ -228,24 +232,22 @@ export default function SignupModal({
 
           {/* PHONE NUMBER */}
 
-          <div className="signup-phone-row">
-            <div className="signup-input-wrapper signup-country-code">
-              <input aria-label="Country code" list="country-codes" value={form.countryCode} onChange={(e)=>setForm(prev=>({...prev,countryCode:e.target.value}))} placeholder="+91" />
-              <datalist id="country-codes"><option value="+91">India</option><option value="+1">USA / Canada</option><option value="+44">United Kingdom</option><option value="+971">UAE</option><option value="+65">Singapore</option><option value="+61">Australia</option><option value="+81">Japan</option><option value="+49">Germany</option><option value="+33">France</option></datalist>
-            </div>
-            <div className="signup-input-wrapper signup-phone-number">
-              <Phone className="signup-input-icon" size={20} strokeWidth={1.8}/>
-              <input type="tel" name="phone" placeholder="Phone Number" autoComplete="tel" required value={form.phone} onChange={set('phone')}/>
-            </div>
+          <div className="signup-input-wrapper">
+            <Phone className="signup-input-icon" size={20} strokeWidth={1.8} />
+            <select name="countryCode" value={form.countryCode} onChange={(e) => setForm((prev) => ({ ...prev, countryCode: e.target.value }))} aria-label="Country code" style={{ border: 0, background: 'transparent', fontWeight: 600, outline: 0, width: 74 }}>
+              <option value="+91">🇮🇳 +91</option><option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option><option value="+971">🇦🇪 +971</option><option value="+61">🇦🇺 +61</option>
+            </select>
+            <input type="tel" name="phone" placeholder="Phone Number" autoComplete="tel-national" required value={form.phone} onChange={set('phone')} />
           </div>
           {fieldErrors.phone && (
             <p className="signup-field-error">{fieldErrors.phone[0]}</p>
           )}
 
-          <label className="signup-upload-row">
-            <span>Profile photo (optional)</span>
-            <input type="file" accept="image/*" onChange={(e)=>{const file=e.target.files?.[0]; if(!file)return; const reader=new FileReader(); reader.onload=()=>setForm(prev=>({...prev,profileImage:String(reader.result||'')})); reader.readAsDataURL(file);}} />
-          </label>
+
+          {/* PROFILE IMAGE */}
+          <div className="signup-input-wrapper">
+            <input type="file" accept="image/*" aria-label="Profile image" onChange={(e) => { const file=e.target.files?.[0]; if(!file)return; const reader=new FileReader(); reader.onload=()=>setForm((prev)=>({...prev,profileImage:String(reader.result)})); reader.readAsDataURL(file); }} />
+          </div>
 
           {/* PASSWORD */}
 

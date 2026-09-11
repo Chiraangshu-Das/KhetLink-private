@@ -7,7 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
+enum RoleType {
   BUYER
   FARMER
   LOGISTICS
@@ -22,8 +22,9 @@ enum RequirementStatus {
 }
 
 enum OfferStatus {
-  PENDING
+  OFFERED
   COUNTERED
+  NEGOTIATING
   ACCEPTED
   REJECTED
 }
@@ -34,12 +35,14 @@ enum OrderStatus {
   IN_TRANSIT
   DELIVERED
   CANCELLED
+  CLOSED
 }
 
 enum PaymentStatus {
   PENDING
   PAID
   FAILED
+  EXPIRED
 }
 
 enum ShipmentStatus {
@@ -49,6 +52,17 @@ enum ShipmentStatus {
   DELIVERED
 }
 
+enum NotificationType {
+  REQUEST
+  COUNTER_OFFER
+  ACCEPTED
+  ORDER
+  PAYMENT
+  SHIPMENT
+  SUPPORT
+  SYSTEM
+}
+
 enum SupportStatus {
   OPEN
   IN_PROGRESS
@@ -56,160 +70,152 @@ enum SupportStatus {
 }
 
 model User {
-  id              String            @id @default(cuid())
-  firstName       String
-  lastName        String
-  email           String            @unique
-  phone           String
-  password        String
-  profileImage    String?
-  language        String            @default("en")
-  locationText    String?
-  latitude        Float?
-  longitude       Float?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  roles           UserRole[]
-  terms           TermsAcceptance[]
-  farmer          FarmerProfile?
-  buyer           BuyerProfile?
-  logistics       LogisticsProfile?
-  listings        Listing[]
-  requirements    Requirement[]
-  ordersAsBuyer   Order[]           @relation("BuyerOrders")
-  ordersAsFarmer  Order[]           @relation("FarmerOrders")
-  notifications   Notification[]
-  supportTickets  SupportTicket[]
-  reviews         Review[]          @relation("Reviewer")
-  receivedReviews Review[]          @relation("Reviewed")
-  offers          Offer[]
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  phone        String
+  password     String
+  profileImage  String?
+  location     String?
+  latitude     Float?
+  longitude    Float?
+  language     String   @default("English")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roles          UserRole[]
+  farmer         FarmerProfile?
+  buyer          BuyerProfile?
+  logistics      LogisticsProfile?
+
+  listings       Listing[]
+  requirements   Requirement[]
+  farmerOffers   Offer[] @relation("farmerOffers")
+
+  ordersAsBuyer  Order[] @relation("buyerOrders")
+  ordersAsSeller Order[] @relation("sellerOrders")
+
+  reviewsReceived Review[] @relation("reviewsReceived")
+  reviewsGiven    Review[] @relation("reviewsGiven")
+
+  notifications  Notification[]
+  supportTickets SupportTicket[]
 }
 
 model UserRole {
-  id        String   @id @default(cuid())
-  userId    String
-  role      Role
-  roleId    String   @unique
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  userId           String
+  role             RoleType
+  termsAccepted    Boolean  @default(false)
+  termsVersion     String?
+  termsAcceptedAt  DateTime?
+  roleCode         String   @unique
+  activatedAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role])
-}
-
-model TermsAcceptance {
-  id         String   @id @default(cuid())
-  userId     String
-  role       Role
-  version    String
-  acceptedAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, role, version])
+  @@index([userId, role])
 }
 
 model FarmerProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  farmerId        String   @unique
-  farmName        String?
-  landAcres       Float?
-  experienceYears Int?
-  locationText    String
-  latitude        Float
-  longitude       Float
-  capacityNotes   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  farmName    String?
+  farmArea    String?
+  landAcres   Float?
+  experience  String?
+  sellingArea String?
+  verified    Boolean @default(false)
+  capacity    Float?
+  produce     Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BuyerProfile {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  buyerId      String   @unique
-  company      String?
-  buyerType    String?
-  locationText String
-  latitude     Float
-  longitude    Float
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  userId    String @unique
+  company   String?
+  buyerType String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LogisticsProfile {
-  id           String           @id @default(cuid())
-  userId       String           @unique
-  logisticsId  String           @unique
-  capacityKg   Float
-  capabilities String[]
-  vehicleType  String?
-  locationText String
-  latitude     Float
-  longitude    Float
-  available    Boolean          @default(true)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  offers       LogisticsOffer[]
+  id               String  @id @default(cuid())
+  userId           String  @unique
+  capacity         Float   @default(0)
+  capabilities     String?
+  rating           Float   @default(0)
+  reviewCount      Int     @default(0)
+  availableCapacity Float  @default(0)
+
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments LogisticsAssignment[]
 }
 
-model Category {
+model ProductCategory {
   id       String    @id @default(cuid())
   name     String    @unique
+
   products Product[]
 }
 
 model Product {
-  id               String            @id @default(cuid())
-  code             String            @unique
-  name             String            @unique
-  categoryId       String
-  unit             String            @default("kg")
-  imageKey         String?
-  active           Boolean           @default(true)
-  category         Category          @relation(fields: [categoryId], references: [id])
-  listings         Listing[]
+  id         String @id @default(cuid())
+  name       String @unique
+  imageUrl   String?
+  categoryId String
+
+  category        ProductCategory  @relation(fields: [categoryId], references: [id])
+  listings        Listing[]
   requirementItems RequirementItem[]
-  orderItems       OrderItem[]
+  orderItems      OrderItem[]
+
+  @@index([categoryId])
 }
 
 model Listing {
-  id                String      @id @default(cuid())
-  code              String      @unique
-  farmerId          String
-  productId         String
-  quantityAvailable Float
-  unit              String
-  price             Float
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  farmer            User        @relation(fields: [farmerId], references: [id], onDelete: Cascade)
-  product           Product     @relation(fields: [productId], references: [id])
-  allocations       OrderItem[]
-  offers            OfferLine[]
+  id        String   @id @default(cuid())
+  farmerId  String
+  productId String
+  quantity  Float
+  unit      String   @default("kg")
+  price     Float
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([productId, quantityAvailable])
+  farmer     User        @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  product    Product     @relation(fields: [productId], references: [id])
+  offerItems OfferItem[]
+  orderItems OrderItem[]
+
+  @@index([farmerId, productId, status])
 }
 
 model Requirement {
-  id           String            @id @default(cuid())
-  code         String            @unique
-  buyerId      String
-  status       RequirementStatus @default(BROWSE_PRODUCTS)
-  locationText String
-  latitude     Float
-  longitude    Float
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  buyer        User              @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  items        RequirementItem[]
-  offers       Offer[]
-  orders       Order[]
+  id         String            @id @default(cuid())
+  buyerId    String
+  status     RequirementStatus @default(BROWSE_PRODUCTS)
+  location   String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  buyer  User              @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  items  RequirementItem[]
+  offers Offer[]
+  orders Order[]
+
+  @@index([buyerId, status])
 }
 
 model RequirementItem {
-  id            String      @id @default(cuid())
+  id            String   @id @default(cuid())
   requirementId String
   productId     String
   quantity      Float
@@ -217,154 +223,214 @@ model RequirementItem {
   minPrice      Float
   maxPrice      Float
   requiredBy    DateTime?
-  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  product       Product     @relation(fields: [productId], references: [id])
+  location      String?
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@index([requirementId])
+  @@index([productId])
 }
 
 model Offer {
-  id            String      @id @default(cuid())
-  code          String      @unique
-  requirementId String
-  farmerId      String
-  offeredPrice  Float
-  status        OfferStatus @default(PENDING)
-  message       String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  farmer        User        @relation(fields: [farmerId], references: [id])
-  lines         OfferLine[]
+  id              String      @id @default(cuid())
+  requirementId   String
+  farmerId        String
+  offeredPrice    Float
+  originalPrice   Float?
+  status          OfferStatus @default(OFFERED)
+  buyerConfirmed  Boolean     @default(false)
+  farmerConfirmed Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  farmer      User        @relation("farmerOffers", fields: [farmerId], references: [id], onDelete: Cascade)
+  items       OfferItem[]
+
+  @@unique([requirementId, farmerId])
+  @@index([farmerId, status])
+  @@index([requirementId, status])
 }
 
-model OfferLine {
-  id        String  @id @default(cuid())
+model OfferItem {
+  id        String @id @default(cuid())
   offerId   String
   listingId String
   quantity  Float
-  offer     Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  listing   Listing @relation(fields: [listingId], references: [id])
+
+  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id])
+
+  @@unique([offerId, listingId])
+  @@index([listingId])
 }
 
 model Order {
-  id               String            @id @default(cuid())
-  code             String            @unique
+  id               String        @id @default(cuid())
   buyerId          String
-  farmerId         String
+  sellerId         String
   requirementId    String?
-  status           OrderStatus       @default(CONFIRMED)
-  paymentStatus    PaymentStatus     @default(PENDING)
-  paymentDeadline  DateTime?
-  totalProduct     Float
-  platformFee      Float
-  logisticsFee     Float
-  totalAmount      Float
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  buyer            User              @relation("BuyerOrders", fields: [buyerId], references: [id])
-  farmer           User              @relation("FarmerOrders", fields: [farmerId], references: [id])
-  requirement      Requirement?      @relation(fields: [requirementId], references: [id])
-  items            OrderItem[]
-  payment          Payment?
-  shipment         Shipment?
-  logisticsOffers  LogisticsOffer[]
-  participantCodes ParticipantCode[]
-  reviews          Review[]
+  status           OrderStatus   @default(CONFIRMED)
+  paymentStatus    PaymentStatus @default(PENDING)
+  paymentExpiresAt DateTime?
+  platformFee      Float         @default(0)
+  logisticsFee     Float         @default(0)
+  total            Float         @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  @@index([paymentStatus, paymentDeadline])
+  buyer       User          @relation("buyerOrders", fields: [buyerId], references: [id])
+  seller      User          @relation("sellerOrders", fields: [sellerId], references: [id])
+  requirement Requirement?  @relation(fields: [requirementId], references: [id])
+
+  items             OrderItem[]
+  payment           Payment?
+  shipment          Shipment?
+  assignments       LogisticsAssignment[]
+  participantCodes  ParticipantCode[]
+  statusHistory     OrderStatusHistory[]
+  reviews           Review[]
+
+  @@index([buyerId, createdAt])
+  @@index([sellerId, createdAt])
+  @@index([paymentStatus, paymentExpiresAt])
+  @@index([requirementId])
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String @id @default(cuid())
   orderId   String
   productId String
-  listingId String
+  listingId String?
   quantity  Float
   unit      String
-  price     Float
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
-  listing   Listing @relation(fields: [listingId], references: [id])
+  unitPrice Float
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [id])
+  listing Listing? @relation(fields: [listingId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([listingId])
 }
 
 model Payment {
   id        String        @id @default(cuid())
   orderId   String        @unique
-  provider  String
-  reference String?
-  status    PaymentStatus @default(PENDING)
+  amount    Float
+  status    PaymentStatus
   paidAt    DateTime?
-  createdAt DateTime      @default(now())
-  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-}
+  expiresAt DateTime?
 
-model LogisticsOffer {
-  id          String           @id @default(cuid())
-  orderId     String
-  logisticsId String
-  distanceKm  Float
-  etaMinutes  Int
-  fee         Float
-  status      OfferStatus      @default(PENDING)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  order       Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  logistics   LogisticsProfile @relation(fields: [logisticsId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
 }
 
 model Shipment {
-  id                    String         @id @default(cuid())
-  orderId               String         @unique
-  status                ShipmentStatus @default(CONFIRMED)
-  farmerLat             Float?
-  farmerLng             Float?
-  buyerLat              Float?
-  buyerLng              Float?
-  logisticsLat          Float?
-  logisticsLng          Float?
-  logisticsLocationText String?
-  farmerCodeVerifiedAt  DateTime?
-  buyerCodeVerifiedAt   DateTime?
-  updatedAt             DateTime       @updatedAt
-  order                 Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id              String         @id @default(cuid())
+  orderId         String         @unique
+  status          ShipmentStatus @default(CONFIRMED)
+
+  pickupLocation   String?
+  deliveryLocation String?
+
+  pickupLat  Float?
+  pickupLng  Float?
+
+  deliveryLat Float?
+  deliveryLng Float?
+
+  currentLat      Float?
+  currentLng      Float?
+  currentLocation String?
+
+  distanceKm  Float?
+  etaMinutes  Int?
+  routeJson   String?
+
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model LogisticsAssignment {
+  id          String   @id @default(cuid())
+  orderId     String
+  logisticsId String
+  status      String   @default("OFFERED")
+  fee         Float
+  offeredAt   DateTime @default(now())
+  acceptedAt  DateTime?
+
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  logistics LogisticsProfile @relation(fields: [logisticsId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, logisticsId])
+  @@index([logisticsId, status])
+  @@index([orderId, status])
 }
 
 model ParticipantCode {
   id        String   @id @default(cuid())
   orderId   String
-  role      Role
+  userId    String
+  role      RoleType
   code      String
   createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, role])
-  @@unique([orderId, code])
+  @@unique([orderId, userId])
+  @@index([userId])
+}
+
+model OrderStatusHistory {
+  id         String   @id @default(cuid())
+  orderId    String
+  fromStatus String?
+  toStatus   String
+  createdAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
 }
 
 model Review {
   id         String   @id @default(cuid())
   orderId    String
   reviewerId String
-  reviewedId String
+  revieweeId String
   rating     Int
-  text       String?
+  comment    String?
   createdAt  DateTime @default(now())
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  reviewer   User     @relation("Reviewer", fields: [reviewerId], references: [id])
-  reviewed   User     @relation("Reviewed", fields: [reviewedId], references: [id])
 
-  @@unique([orderId, reviewerId, reviewedId])
+  order    Order @relation(fields: [orderId], references: [id])
+  reviewer User  @relation("reviewsGiven", fields: [reviewerId], references: [id])
+  reviewee User  @relation("reviewsReceived", fields: [revieweeId], references: [id])
+
+  @@unique([orderId, reviewerId, revieweeId])
+  @@index([revieweeId])
+  @@index([reviewerId])
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
+  role      RoleType?
+  type      NotificationType
   title     String
   message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
 
-  @@index([userId, read])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
 }
 
 model SupportTicket {
@@ -375,5 +441,8 @@ model SupportTicket {
   status    SupportStatus @default(OPEN)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
 }

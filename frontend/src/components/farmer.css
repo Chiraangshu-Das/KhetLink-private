@@ -1081,3 +1081,4 @@ tbody tr:hover { background: #f7fbf8; }
   .khl-profile-save-dock>div { min-width:0; }
   .khl-profile-save-dock button { min-width:112px; }
 }
+.khl-nav-profile-button,.farmer-sidebar-link{font:inherit;background:none;border:0;cursor:pointer;color:inherit}.khl-quick-card.blue{border:0;text-align:left;font:inherit;width:100%;cursor:pointer}
