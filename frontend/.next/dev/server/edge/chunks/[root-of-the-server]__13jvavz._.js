@@ -29,7 +29,6 @@ function middleware(req) {
 }
 const config = {
     matcher: [
-        '/dashboard/:path*',
         '/buyer/:path*',
         '/farmer/:path*',
         '/logistics/:path*'

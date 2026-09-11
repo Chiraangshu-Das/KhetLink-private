@@ -14,7 +14,6 @@ import './LoginModal.css';
 interface LoginModalProps {
   onClose: () => void;
   onSignUp: () => void;
-  onSuccess?: (user: { firstName?: string; lastName?: string; profileImage?: string }) => void;
 }
 
 interface FieldErrors {
@@ -22,7 +21,7 @@ interface FieldErrors {
   password?: string[];
 }
 
-export default function LoginModal({ onClose, onSignUp, onSuccess }: LoginModalProps) {
+export default function LoginModal({ onClose, onSignUp }: LoginModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState('');
@@ -65,9 +64,8 @@ export default function LoginModal({ onClose, onSignUp, onSuccess }: LoginModalP
         return;
       }
 
-      // Stay on the landing page after login and update its auth controls.
-      onSuccess?.(data.user ?? {});
-      onClose();
+      // Success → redirect to dashboard
+      window.location.href = '/dashboard';
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {

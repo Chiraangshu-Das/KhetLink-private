@@ -7,7 +7,6 @@ import './SignupModal.css';
 interface SignupModalProps {
   onClose: () => void;
   onLogin?: () => void;
-  onSuccess?: (user: { firstName?: string; lastName?: string; profileImage?: string }) => void;
 }
 
 interface FieldErrors {
@@ -22,7 +21,6 @@ interface FieldErrors {
 export default function SignupModal({
   onClose,
   onLogin,
-  onSuccess,
 }: SignupModalProps) {
 
   const [showPassword, setShowPassword] = useState(false);
@@ -74,9 +72,8 @@ export default function SignupModal({
         return;
       }
 
-      // Stay on the landing page after signup and update its auth controls.
-      onSuccess?.(data.user ?? {});
-      onClose();
+      // Success → redirect to dashboard
+      window.location.href = '/dashboard';
     } catch {
       setGlobalError('Network error. Please try again.');
     } finally {

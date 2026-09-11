@@ -76,7 +76,7 @@ model User {
   email        String   @unique
   phone        String
   password     String
-  profileImage  String?
+  profileImage String?
   location     String?
   latitude     Float?
   longitude    Float?
@@ -84,34 +84,30 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  roles          UserRole[]
-  farmer         FarmerProfile?
-  buyer          BuyerProfile?
-  logistics      LogisticsProfile?
-
-  listings       Listing[]
-  requirements   Requirement[]
-  farmerOffers   Offer[] @relation("farmerOffers")
-
-  ordersAsBuyer  Order[] @relation("buyerOrders")
-  ordersAsSeller Order[] @relation("sellerOrders")
-
-  reviewsReceived Review[] @relation("reviewsReceived")
-  reviewsGiven    Review[] @relation("reviewsGiven")
-
-  notifications  Notification[]
-  supportTickets SupportTicket[]
+  roles           UserRole[]
+  farmer          FarmerProfile?
+  buyer           BuyerProfile?
+  logistics       LogisticsProfile?
+  listings        Listing[]
+  requirements    Requirement[]
+  farmerOffers    Offer[]          @relation("farmerOffers")
+  ordersAsBuyer   Order[]          @relation("buyerOrders")
+  ordersAsSeller  Order[]          @relation("sellerOrders")
+  reviewsReceived Review[]         @relation("reviewsReceived")
+  reviewsGiven    Review[]         @relation("reviewsGiven")
+  notifications   Notification[]
+  supportTickets  SupportTicket[]
 }
 
 model UserRole {
-  id               String   @id @default(cuid())
-  userId           String
-  role             RoleType
-  termsAccepted    Boolean  @default(false)
-  termsVersion     String?
-  termsAcceptedAt  DateTime?
-  roleCode         String   @unique
-  activatedAt      DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  role            RoleType
+  termsAccepted   Boolean  @default(false)
+  termsVersion    String?
+  termsAcceptedAt DateTime?
+  roleCode        String   @unique
+  activatedAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -144,13 +140,13 @@ model BuyerProfile {
 }
 
 model LogisticsProfile {
-  id               String  @id @default(cuid())
-  userId           String  @unique
-  capacity         Float   @default(0)
-  capabilities     String?
-  rating           Float   @default(0)
-  reviewCount      Int     @default(0)
-  availableCapacity Float  @default(0)
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  capacity          Float   @default(0)
+  capabilities      String?
+  rating            Float   @default(0)
+  reviewCount       Int     @default(0)
+  availableCapacity Float   @default(0)
 
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignments LogisticsAssignment[]
@@ -159,37 +155,34 @@ model LogisticsProfile {
 model ProductCategory {
   id       String    @id @default(cuid())
   name     String    @unique
-
   products Product[]
 }
 
 model Product {
-  id         String @id @default(cuid())
-  name       String @unique
-  imageUrl   String?
-  categoryId String
-
-  category        ProductCategory  @relation(fields: [categoryId], references: [id])
-  listings        Listing[]
+  id               String             @id @default(cuid())
+  name             String             @unique
+  imageUrl         String?
+  categoryId       String
+  category         ProductCategory    @relation(fields: [categoryId], references: [id])
+  listings         Listing[]
   requirementItems RequirementItem[]
-  orderItems      OrderItem[]
+  orderItems       OrderItem[]
 
   @@index([categoryId])
 }
 
 model Listing {
-  id        String   @id @default(cuid())
-  farmerId  String
-  productId String
-  quantity  Float
-  unit      String   @default("kg")
-  price     Float
-  status    String   @default("Active")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  farmer     User        @relation(fields: [farmerId], references: [id], onDelete: Cascade)
-  product    Product     @relation(fields: [productId], references: [id])
+  id         String   @id @default(cuid())
+  farmerId   String
+  productId  String
+  quantity   Float
+  unit       String   @default("kg")
+  price      Float
+  status     String   @default("Active")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  farmer     User     @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
   offerItems OfferItem[]
   orderItems OrderItem[]
 
@@ -205,11 +198,10 @@ model Requirement {
   longitude  Float?
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
-
-  buyer  User              @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  items  RequirementItem[]
-  offers Offer[]
-  orders Order[]
+  buyer      User              @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  items      RequirementItem[]
+  offers     Offer[]
+  orders     Order[]
 
   @@index([buyerId, status])
 }
@@ -224,12 +216,8 @@ model RequirementItem {
   maxPrice      Float
   requiredBy    DateTime?
   location      String?
-
-  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  product     Product     @relation(fields: [productId], references: [id])
-
-  @@index([requirementId])
-  @@index([productId])
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id])
 }
 
 model Offer {
@@ -243,14 +231,12 @@ model Offer {
   farmerConfirmed Boolean     @default(false)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-
-  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  farmer      User        @relation("farmerOffers", fields: [farmerId], references: [id], onDelete: Cascade)
-  items       OfferItem[]
+  requirement     Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  farmer          User        @relation("farmerOffers", fields: [farmerId], references: [id], onDelete: Cascade)
+  items           OfferItem[]
 
   @@unique([requirementId, farmerId])
   @@index([farmerId, status])
-  @@index([requirementId, status])
 }
 
 model OfferItem {
@@ -258,32 +244,28 @@ model OfferItem {
   offerId   String
   listingId String
   quantity  Float
-
-  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  listing Listing @relation(fields: [listingId], references: [id])
+  offer     Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  listing   Listing @relation(fields: [listingId], references: [id])
 
   @@unique([offerId, listingId])
-  @@index([listingId])
 }
 
 model Order {
-  id               String        @id @default(cuid())
-  buyerId          String
-  sellerId         String
-  requirementId    String?
-  status           OrderStatus   @default(CONFIRMED)
-  paymentStatus    PaymentStatus @default(PENDING)
-  paymentExpiresAt DateTime?
-  platformFee      Float         @default(0)
-  logisticsFee     Float         @default(0)
-  total            Float         @default(0)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  buyer       User          @relation("buyerOrders", fields: [buyerId], references: [id])
-  seller      User          @relation("sellerOrders", fields: [sellerId], references: [id])
-  requirement Requirement?  @relation(fields: [requirementId], references: [id])
-
+  id                String        @id @default(cuid())
+  buyerId           String
+  sellerId          String
+  requirementId     String?
+  status            OrderStatus   @default(CONFIRMED)
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentExpiresAt  DateTime?
+  platformFee       Float         @default(0)
+  logisticsFee      Float         @default(0)
+  total             Float         @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  buyer             User                   @relation("buyerOrders", fields: [buyerId], references: [id])
+  seller            User                   @relation("sellerOrders", fields: [sellerId], references: [id])
+  requirement       Requirement?           @relation(fields: [requirementId], references: [id])
   items             OrderItem[]
   payment           Payment?
   shipment          Shipment?
@@ -295,7 +277,6 @@ model Order {
   @@index([buyerId, createdAt])
   @@index([sellerId, createdAt])
   @@index([paymentStatus, paymentExpiresAt])
-  @@index([requirementId])
 }
 
 model OrderItem {
@@ -306,14 +287,9 @@ model OrderItem {
   quantity  Float
   unit      String
   unitPrice Float
-
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product  @relation(fields: [productId], references: [id])
-  listing Listing? @relation(fields: [listingId], references: [id])
-
-  @@index([orderId])
-  @@index([productId])
-  @@index([listingId])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+  listing   Listing? @relation(fields: [listingId], references: [id])
 }
 
 model Payment {
@@ -323,37 +299,27 @@ model Payment {
   status    PaymentStatus
   paidAt    DateTime?
   expiresAt DateTime?
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([status, expiresAt])
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Shipment {
-  id              String         @id @default(cuid())
-  orderId         String         @unique
-  status          ShipmentStatus @default(CONFIRMED)
-
+  id               String         @id @default(cuid())
+  orderId          String         @unique
+  status           ShipmentStatus @default(CONFIRMED)
   pickupLocation   String?
   deliveryLocation String?
-
-  pickupLat  Float?
-  pickupLng  Float?
-
-  deliveryLat Float?
-  deliveryLng Float?
-
-  currentLat      Float?
-  currentLng      Float?
-  currentLocation String?
-
-  distanceKm  Float?
-  etaMinutes  Int?
-  routeJson   String?
-
-  updatedAt DateTime @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  pickupLat        Float?
+  pickupLng        Float?
+  deliveryLat      Float?
+  deliveryLng      Float?
+  currentLat       Float?
+  currentLng       Float?
+  currentLocation  String?
+  distanceKm       Float?
+  etaMinutes       Int?
+  routeJson        String?
+  updatedAt        DateTime       @updatedAt
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model LogisticsAssignment {
@@ -364,13 +330,11 @@ model LogisticsAssignment {
   fee         Float
   offeredAt   DateTime @default(now())
   acceptedAt  DateTime?
-
-  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  logistics LogisticsProfile @relation(fields: [logisticsId], references: [id], onDelete: Cascade)
+  order       Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  logistics   LogisticsProfile @relation(fields: [logisticsId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, logisticsId])
   @@index([logisticsId, status])
-  @@index([orderId, status])
 }
 
 model ParticipantCode {
@@ -380,12 +344,10 @@ model ParticipantCode {
   role      RoleType
   code      String
   createdAt DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, role])
   @@unique([orderId, userId])
-  @@index([userId])
 }
 
 model OrderStatusHistory {
@@ -394,8 +356,7 @@ model OrderStatusHistory {
   fromStatus String?
   toStatus   String
   createdAt  DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId, createdAt])
 }
@@ -408,14 +369,11 @@ model Review {
   rating     Int
   comment    String?
   createdAt  DateTime @default(now())
-
-  order    Order @relation(fields: [orderId], references: [id])
-  reviewer User  @relation("reviewsGiven", fields: [reviewerId], references: [id])
-  reviewee User  @relation("reviewsReceived", fields: [revieweeId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+  reviewer   User     @relation("reviewsGiven", fields: [reviewerId], references: [id])
+  reviewee   User     @relation("reviewsReceived", fields: [revieweeId], references: [id])
 
   @@unique([orderId, reviewerId, revieweeId])
-  @@index([revieweeId])
-  @@index([reviewerId])
 }
 
 model Notification {
@@ -427,8 +385,7 @@ model Notification {
   message   String
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
 }
@@ -441,8 +398,5 @@ model SupportTicket {
   status    SupportStatus @default(OPEN)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

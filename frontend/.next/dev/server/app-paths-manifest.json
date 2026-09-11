@@ -1,6 +1,4 @@
 {
-  "/buyer/page": "app/buyer/page.js",
-  "/logistics/page": "app/logistics/page.js",
-  "/logistics/profile/page": "app/logistics/profile/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js"
 }
