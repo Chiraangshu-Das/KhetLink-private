@@ -1,82 +1,75 @@
-/* =====================================================
-   SIGNUP OVERLAY
-===================================================== */
+/* =====================================================*
+*   BOX SIZING
+*===================================================== */
+
+.signup-overlay,
+.signup-overlay *,
+.signup-overlay *::before,
+.signup-overlay *::after {
+  box-sizing: border-box;
+}
+
+
+/* =====================================================*
+*   SIGNUP OVERLAY
+*===================================================== */
 
 .signup-overlay {
   position: fixed;
-
   inset: 0;
-
   z-index: 9999;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
+  width: 100%;
+  height: 100%;
   padding: 24px;
-
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.58);
-
   animation: signup-overlay-in 0.25s ease both;
 }
 
 
-/* =====================================================
-   SIGNUP MODAL
-===================================================== */
+/* =====================================================*
+*   SIGNUP MODAL
+*===================================================== */
 
 .signup-modal {
   position: relative;
-
   width: min(570px, 100%);
-
-  min-height: 720px;
-
+  max-width: 100%;
+  height: min(720px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
   overflow: hidden;
-
   padding: 35px 78px 88px;
-
   background: #ffffff;
-
   border-radius: 20px;
-
   box-shadow:
     0 25px 70px rgba(0, 0, 0, 0.28);
-
   animation: signup-modal-in 0.3s ease both;
 }
 
 
-/* =====================================================
-   CLOSE BUTTON
-===================================================== */
+/* =====================================================*
+*   CLOSE BUTTON
+*===================================================== */
 
 .signup-close {
   position: absolute;
-
   top: 20px;
   right: 20px;
-
   z-index: 10;
-
   width: 38px;
   height: 38px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 0;
-
   border: 1px solid #b8d8c6;
   border-radius: 50%;
-
   background: #ffffff;
-
   color: var(--primary-green);
-
   cursor: pointer;
-
   transition:
     background-color 0.2s ease,
     color 0.2s ease,
@@ -93,20 +86,16 @@
 }
 
 
-/* =====================================================
-   LOGO
-===================================================== */
+/* =====================================================*
+*   LOGO
+*===================================================== */
 
 .signup-logo {
   position: relative;
-
   z-index: 2;
-
   width: 62px;
   height: 62px;
-
   margin: 0 auto 9px;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -114,90 +103,70 @@
 
 .signup-logo img {
   display: block;
-
   width: 62px;
   height: 62px;
-
   object-fit: contain;
 }
 
 
-/* =====================================================
-   HEADER
-===================================================== */
+/* =====================================================*
+*   HEADER
+*===================================================== */
 
 .signup-header {
   position: relative;
-
   z-index: 2;
-
   margin-bottom: 19px;
-
   text-align: center;
 }
 
 .signup-header h2 {
   margin: 0 0 5px;
-
   color: #090909;
-
   font-size: 25px;
-
   font-weight: 750;
-
   line-height: 1.2;
 }
 
 .signup-header p {
   margin: 0;
-
   color: #5c5c5c;
-
   font-size: 15px;
-
   font-weight: 400;
-
   line-height: 1.5;
 }
 
 
-/* =====================================================
-   FORM
-===================================================== */
+/* =====================================================*
+*   FORM
+*===================================================== */
 
 .signup-form {
   position: relative;
-
   z-index: 2;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 12px;
+  width: 100%;
+  min-width: 0;
 }
 
 
-/* =====================================================
-   INPUT WRAPPER
-===================================================== */
+/* =====================================================*
+*   INPUT WRAPPER
+*===================================================== */
 
 .signup-input-wrapper {
   position: relative;
-
   width: 100%;
+  min-width: 0;
   height: 49px;
-
   display: flex;
-
   align-items: center;
-
   border: 1px solid #d2d2d2;
-
   border-radius: 11px;
-
   background: #ffffff;
-
+  overflow: hidden;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -205,88 +174,168 @@
 
 .signup-input-wrapper:focus-within {
   border-color: var(--primary-green);
-
   box-shadow:
     0 0 0 3px rgba(12, 122, 67, 0.08);
 }
 
 
-/* =====================================================
-   INPUT ICON
-===================================================== */
+/* =====================================================*
+*   INPUT ICON
+*===================================================== */
 
 .signup-input-icon {
-  flex-shrink: 0;
-
+  flex: 0 0 auto;
   margin-left: 17px;
-
   color: #686868;
-
   pointer-events: none;
 }
 
 
-/* =====================================================
-   INPUT
-===================================================== */
+/* =====================================================*
+*   NORMAL INPUT
+*===================================================== */
 
 .signup-input-wrapper input {
   width: 100%;
-  height: 100%;
-
   min-width: 0;
-
+  height: 100%;
   padding: 0 16px 0 14px;
-
   border: none;
-
   outline: none;
-
   background: transparent;
-
   color: #222222;
-
   font-family: inherit;
-
   font-size: 15px;
-
   font-weight: 400;
 }
 
 .signup-input-wrapper input::placeholder {
   color: #777777;
-
   opacity: 1;
 }
 
 
-/* =====================================================
-   PASSWORD TOGGLE
-===================================================== */
+/* =====================================================*
+*   PHONE NUMBER
+*===================================================== */
+
+.signup-input-wrapper:has(input[type="tel"]) {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.signup-input-wrapper:has(input[type="tel"]) .signup-input-icon {
+  flex: 0 0 auto;
+  margin-left: 14px;
+}
+
+.signup-input-wrapper:has(input[type="tel"]) select {
+  flex: 0 0 82px;
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+  height: 100%;
+  margin: 0;
+  padding: 0 2px 0 5px;
+  border: none;
+  outline: none;
+  background: #ffffff;
+  color: #222222;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signup-input-wrapper:has(input[type="tel"]) input[type="tel"] {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 12px 0 5px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #222222;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.signup-input-wrapper:has(input[type="tel"]) input[type="tel"]::placeholder {
+  color: #777777;
+  opacity: 1;
+}
+
+
+/* =====================================================*
+*   PROFILE IMAGE / FILE INPUT
+*===================================================== */
+
+.signup-input-wrapper:has(input[type="file"]) {
+  width: 100%;
+  min-width: 0;
+  padding: 0 10px;
+  overflow: hidden;
+}
+
+.signup-input-wrapper:has(input[type="file"]) input[type="file"] {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 6px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #555555;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.signup-input-wrapper:has(input[type="file"]) input[type="file"]::file-selector-button {
+  height: 32px;
+  margin: 0 9px 0 0;
+  padding: 0 11px;
+  border: 1px solid #cfe1d6;
+  border-radius: 7px;
+  background: #f2faf5;
+  color: var(--primary-green);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.signup-input-wrapper:has(input[type="file"]) input[type="file"]::file-selector-button:hover {
+  background: #e5f5eb;
+}
+
+
+/* =====================================================*
+*   PASSWORD TOGGLE
+*===================================================== */
 
 .signup-password-toggle {
+  flex: 0 0 45px;
   width: 45px;
   height: 100%;
-
-  flex-shrink: 0;
-
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   margin-right: 2px;
-
   padding: 0;
-
   border: none;
-
   background: transparent;
-
   color: #686868;
-
   cursor: pointer;
-
   transition:
     color 0.2s ease;
 }
@@ -297,39 +346,27 @@
 
 .signup-password-toggle:focus-visible {
   outline: 2px solid var(--primary-green);
-
   outline-offset: -5px;
-
   border-radius: 7px;
 }
 
 
-/* =====================================================
-   SIGN UP BUTTON
-===================================================== */
+/* =====================================================*
+*   SIGN UP BUTTON
+*===================================================== */
 
 .signup-submit {
   width: 100%;
   height: 46px;
-
   margin-top: 5px;
-
   border: 1px solid var(--primary-green);
-
   border-radius: 10px;
-
   background: var(--primary-green);
-
   color: #ffffff;
-
   font-family: inherit;
-
   font-size: 15px;
-
   font-weight: 650;
-
   cursor: pointer;
-
   transition:
     background-color 0.2s ease,
     transform 0.15s ease;
@@ -345,178 +382,137 @@
 
 .signup-submit:focus-visible {
   outline: 2px solid var(--primary-green);
-
   outline-offset: 3px;
 }
 
 
-/* =====================================================
-   DIVIDER
-===================================================== */
+/* =====================================================*
+*   DIVIDER
+*===================================================== */
 
 .signup-divider {
   position: relative;
-
   z-index: 2;
-
   display: flex;
-
   align-items: center;
-
   gap: 14px;
-
   margin: 18px 0 14px;
 }
 
 .signup-divider span {
   flex: 1;
-
   height: 1px;
-
   background: #d9d9d9;
 }
 
 .signup-divider p {
   margin: 0;
-
   color: #666666;
-
   font-size: 14px;
 }
 
 
-/* =====================================================
-   LOGIN
-===================================================== */
+/* =====================================================*
+*   LOGIN
+*===================================================== */
 
 .signup-login {
   position: relative;
-
   z-index: 2;
-
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   gap: 5px;
-
-  color: #555555;
-
+  color: #ffffff;
   font-size: 14px;
-
   font-weight: 400;
 }
 
 .signup-login-link {
   padding: 0;
-
   border: none;
-
   background: transparent;
-
-  color: var(--primary-green);
-
+  color: rgb(9, 255, 0);
   font-family: inherit;
-
   font-size: inherit;
-
   font-weight: 650;
-
   text-decoration: underline;
-
   cursor: pointer;
 }
 
 .signup-login-link:hover {
-  color: #075d33;
+  color: #bdffa3;
 }
 
 
-/* =====================================================
-   TOP DECORATIVE LEAF
-===================================================== */
+/* =====================================================*
+*   TOP DECORATIVE LEAF
+*===================================================== */
 
 .signup-decoration {
   position: absolute;
-
   pointer-events: none;
-
   z-index: 1;
 }
 
 .signup-decoration-top {
   top: 30px;
-
   left: 23px;
-
   width: 55px;
   height: 40px;
-
   transform: rotate(-25deg);
 }
 
 .signup-decoration-top span {
   position: absolute;
-
   width: 42px;
   height: 22px;
-
   border-radius:
     100% 0 100% 0;
-
   background:
     linear-gradient(
       135deg,
       #a5df5c,
       #269c45
     );
-
   transform: rotate(-18deg);
 }
 
 .signup-decoration-top span::after {
   content: "";
-
   position: absolute;
-
   left: 7px;
   top: 10px;
-
   width: 32px;
   height: 1px;
-
   background: rgba(255, 255, 255, 0.65);
-
   transform: rotate(-20deg);
 }
 
 
-/* =====================================================
-   BOTTOM LANDSCAPE
-===================================================== */
+/* =====================================================*
+*   BOTTOM LANDSCAPE
+*===================================================== */
 
 .signup-landscape {
   position: absolute;
-
   left: 0;
   bottom: 0;
-
   width: 100%;
   height: 82px;
-
   overflow: hidden;
-
   pointer-events: none;
-
   z-index: 1;
-
-  background: url("/SLback.png") center / cover no-repeat;
+  background:
+    url("/SLback.png")
+    center / cover
+    no-repeat;
 }
 
-/* =====================================================
-   ANIMATIONS
-===================================================== */
+
+/* =====================================================*
+*   ANIMATIONS
+*===================================================== */
 
 @keyframes signup-overlay-in {
   from {
@@ -531,7 +527,6 @@
 @keyframes signup-modal-in {
   from {
     opacity: 0;
-
     transform:
       translateY(18px)
       scale(0.97);
@@ -539,7 +534,6 @@
 
   to {
     opacity: 1;
-
     transform:
       translateY(0)
       scale(1);
@@ -547,45 +541,62 @@
 }
 
 
-/* =====================================================
-   MOBILE
-===================================================== */
+/* =====================================================*
+*   MOBILE
+*===================================================== */
 
 @media (max-width: 600px) {
-
   .signup-overlay {
-    padding: 15px;
+    padding: 12px;
   }
 
   .signup-modal {
     width: 100%;
+    max-width: 100%;
 
-    min-height: 650px;
+    /*
+     * Changed:
+     * Let the modal use its natural content height instead
+     * of forcing it to exactly fill the viewport.
+     * This prevents the last form rows from being clipped.
+     */
+    height: auto;
+    max-height: calc(100dvh - 24px);
+    min-height: 0;
 
+    overflow: hidden;
+
+    /*
+     * Only the bottom padding is reduced.
+     * The rest of your original spacing is preserved.
+     */
     padding:
-      30px
+      22px
       25px
-      76px;
+      60px;
 
     border-radius: 18px;
   }
 
   .signup-close {
-    top: 16px;
-    right: 16px;
-
+    top: 12px;
+    right: 12px;
     width: 35px;
     height: 35px;
   }
 
   .signup-logo,
   .signup-logo img {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .signup-logo {
+    margin-bottom: 5px;
   }
 
   .signup-header {
-    margin-bottom: 18px;
+    margin-bottom: 13px;
   }
 
   .signup-header h2 {
@@ -596,37 +607,120 @@
     font-size: 14px;
   }
 
-  .signup-input-wrapper {
-    height: 48px;
+  .signup-form {
+    gap: 9px;
   }
 
-  .signup-form {
-    gap: 11px;
+  .signup-input-wrapper {
+    height: 46px;
+  }
+
+
+  /* ---------------------------------------------------*
+  *     PHONE
+  *  --------------------------------------------------- */
+
+  .signup-input-wrapper:has(input[type="tel"]) .signup-input-icon {
+    margin-left: 11px;
+  }
+
+  .signup-input-wrapper:has(input[type="tel"]) select {
+    flex-basis: 72px;
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    padding-left: 3px;
+    padding-right: 1px;
+    font-size: 12px;
+  }
+
+  .signup-input-wrapper:has(input[type="tel"]) input[type="tel"] {
+    min-width: 0;
+    padding-left: 4px;
+    padding-right: 7px;
+    font-size: 14px;
+  }
+
+
+  /* ---------------------------------------------------*
+  *     FILE
+  *  --------------------------------------------------- */
+
+  .signup-input-wrapper:has(input[type="file"]) {
+    padding: 0 7px;
+  }
+
+  .signup-input-wrapper:has(input[type="file"]) input[type="file"] {
+    min-width: 0;
+    padding: 6px 0;
+    font-size: 11px;
+  }
+
+  .signup-input-wrapper:has(input[type="file"]) input[type="file"]::file-selector-button {
+    height: 29px;
+    margin-right: 6px;
+    padding: 0 8px;
+    font-size: 11px;
   }
 
   .signup-landscape {
-    height: 72px;
+    height: 68px;
   }
 }
 
 
-/* =====================================================
-   VERY SMALL SCREENS
-===================================================== */
+/* =====================================================*
+*   VERY SMALL SCREENS
+*===================================================== */
 
 @media (max-width: 400px) {
-
   .signup-overlay {
-    padding: 10px;
+    padding: 8px;
   }
 
   .signup-modal {
-    min-height: 620px;
+    width: 100%;
+    max-width: 100%;
 
+    /*
+     * Same minimal fix here:
+     * natural height + viewport maximum.
+     */
+    height: auto;
+    max-height: calc(100dvh - 16px);
+    min-height: 0;
+
+    overflow: hidden;
+
+    /*
+     * Original top/side spacing preserved.
+     * Only bottom padding reduced from 68px to 55px.
+     */
     padding:
-      27px
       18px
-      70px;
+      18px
+      55px;
+  }
+
+  .signup-close {
+    top: 10px;
+    right: 10px;
+    width: 33px;
+    height: 33px;
+  }
+
+  .signup-logo,
+  .signup-logo img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .signup-logo {
+    margin-bottom: 4px;
+  }
+
+  .signup-header {
+    margin-bottom: 10px;
   }
 
   .signup-header h2 {
@@ -637,22 +731,73 @@
     font-size: 13px;
   }
 
-  .signup-input-wrapper {
-    height: 46px;
+  .signup-form {
+    gap: 7px;
   }
 
-  .signup-form {
-    gap: 9px;
+  .signup-input-wrapper {
+    height: 44px;
+  }
+
+
+  /* ---------------------------------------------------*
+  *     PHONE
+  *  --------------------------------------------------- */
+
+  .signup-input-wrapper:has(input[type="tel"]) .signup-input-icon {
+    margin-left: 9px;
+  }
+
+  .signup-input-wrapper:has(input[type="tel"]) select {
+    flex-basis: 66px;
+    width: 66px;
+    min-width: 66px;
+    max-width: 66px;
+    padding-left: 2px;
+    padding-right: 0;
+    font-size: 11px;
+  }
+
+  .signup-input-wrapper:has(input[type="tel"]) input[type="tel"] {
+    min-width: 0;
+    padding-left: 3px;
+    padding-right: 5px;
+    font-size: 13px;
+  }
+
+
+  /* ---------------------------------------------------*
+  *     FILE
+  *  --------------------------------------------------- */
+
+  .signup-input-wrapper:has(input[type="file"]) {
+    padding: 0 5px;
+  }
+
+  .signup-input-wrapper:has(input[type="file"]) input[type="file"] {
+    min-width: 0;
+    padding: 6px 0;
+    font-size: 10px;
+  }
+
+  .signup-input-wrapper:has(input[type="file"]) input[type="file"]::file-selector-button {
+    height: 27px;
+    margin-right: 5px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .signup-landscape {
+    height: 62px;
   }
 }
 
 
-/* =====================================================
-   REDUCED MOTION
-===================================================== */
+/* =====================================================*
+*   REDUCED MOTION
+*===================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-
   .signup-overlay,
   .signup-modal {
     animation: none;
@@ -664,7 +809,12 @@
     transition: none;
   }
 }
-/* Field-level error messages */
+
+
+/* =====================================================*
+*   FIELD-LEVEL ERROR MESSAGES
+*===================================================== */
+
 .signup-field-error {
   color: #dc2626;
   font-size: 0.75rem;
@@ -672,7 +822,11 @@
   line-height: 1.4;
 }
 
-/* Remove native browser password reveal icons */
+
+/* =====================================================*
+*   REMOVE NATIVE PASSWORD REVEAL ICONS
+*===================================================== */
+
 .signup-input-wrapper input[type="password"]::-ms-reveal,
 .signup-input-wrapper input[type="password"]::-ms-clear {
   display: none;

@@ -17,6 +17,14 @@ r.get("/", async (req: AuthRequest, res) => {
   return res.json({ notifications });
 });
 
+r.delete("/read", async (req: AuthRequest, res) => {
+  const role = roleSchema.safeParse(req.query.role);
+  const result = await prisma.notification.deleteMany({
+    where: { userId: req.userId!, ...(role.success ? { role: role.data } : {}) },
+  });
+  return res.json({ deleted: result.count });
+});
+
 r.post("/:id/read", async (req: AuthRequest, res) => {
   const id = typeof req.params.id === "string" ? req.params.id : null;
   if (!id) return res.status(400).json({ error: "Invalid notification id" });

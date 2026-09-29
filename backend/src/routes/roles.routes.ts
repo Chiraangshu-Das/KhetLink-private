@@ -17,7 +17,14 @@ router.post("/activate", async (req: AuthRequest, res) => {
   if (!parsed.success) return res.status(400).json({ error: "Terms acceptance is required" });
   const { role } = parsed.data;
   const existing = await prisma.userRole.findUnique({ where: { userId_role: { userId: req.userId!, role } } });
-  if (existing) return res.json({ role: existing });
+  if (existing) {
+    if (existing.roleCode.length !== 6) {
+      const roleCode = await uniqueCode(ROLE_CODE_PREFIX[role]);
+      const migrated = await prisma.userRole.update({ where: { id: existing.id }, data: { roleCode } });
+      return res.json({ role: migrated });
+    }
+    return res.json({ role: existing });
+  }
   const roleCode = await uniqueCode(ROLE_CODE_PREFIX[role]);
   const created = await prisma.$transaction(async tx => {
     const roleRow = await tx.userRole.create({ data: { userId: req.userId!, role, termsAccepted: true, termsVersion: TERMS_VERSION, termsAcceptedAt: new Date(), roleCode } });

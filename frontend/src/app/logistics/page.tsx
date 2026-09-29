@@ -1,33 +1,6 @@
-"use client";
-import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Bell, Check, CircleHelp, MapPin, Package, Truck, UserCircle, X } from "lucide-react";
-import "./logistics.css";
-
-type Tab = "dashboard" | "offers" | "orders" | "shipment" | "analytics" | "help" | "profile";
-type Offer = { id:string; order:{id:string; items:{quantity:number;unit:string;product:{name:string}}[]; shipment?:{pickupLocation?:string;deliveryLocation?:string;distanceKm?:number;etaMinutes?:number;status?:string}} };
-type User = {firstName?:string;lastName?:string;profileImage?:string;location?:string};
-
-export default function LogisticsPage(){
- const [tab,setTab]=useState<Tab>("dashboard"); const [offers,setOffers]=useState<Offer[]>([]); const [profile,setProfile]=useState<User|null>(null); const [error,setError]=useState(""); const [loading,setLoading]=useState(true); const [notice,setNotice]=useState("");
- const load=async()=>{try{setLoading(true);const [o,p]=await Promise.all([fetch('/api/logistics/offers',{credentials:'include'}),fetch('/api/profile/me',{credentials:'include'})]);if(!o.ok){setError((await o.json().catch(()=>({}))).error??'Activate the Logistics role first.');return;}setOffers((await o.json()).offers??[]);if(p.ok)setProfile((await p.json()).user)}catch{setError('Unable to load logistics data.')}finally{setLoading(false)}};
- useEffect(()=>{load();const t=setInterval(load,15000);return()=>clearInterval(t)},[]);
- const action=async(id:string,kind:"accept"|"decline")=>{const r=await fetch(`/api/logistics/offers/${id}/${kind}`,{method:'POST',credentials:'include'});const d=await r.json().catch(()=>({}));if(!r.ok){setError(d.error??`Unable to ${kind} offer`);return;}setNotice(kind==='accept'?'Transport offer accepted.':'Transport offer declined.');load();setTimeout(()=>setNotice(''),2500)};
- const initials=useMemo(()=>`${profile?.firstName?.[0]??''}${profile?.lastName?.[0]??''}`.toUpperCase()||'LP',[profile]);
- const nav:[Tab,string][]=[['dashboard','Dashboard'],['offers','Transport Offers'],['orders','Orders / Deliveries'],['shipment','Shipment'],['analytics','Analytics'],['help','Help'],['profile','Profile']];
- return <div className="log-shell">
-  <header className="log-top"><div className="log-brand"><img src="/Khetlink_Logo.svg"/><div><b>KhetLink</b><small>Logistics dashboard</small></div></div><div className="log-top-actions"><button className="log-icon"><Bell size={18}/></button><button className="log-avatar">{profile?.profileImage?<img src={profile.profileImage} alt=""/>:initials}</button><span>{profile?.firstName} {profile?.lastName}</span></div></header>
-  <div className="log-body"><aside className="log-sidebar">{nav.map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{id==='dashboard'?<Truck size={18}/>:id==='offers'?<Package size={18}/>:id==='analytics'?<BarChart3 size={18}/>:id==='help'?<CircleHelp size={18}/>:<MapPin size={18}/>}<span>{label}</span></button>)}</aside>
-   <main className="log-main"><div className="log-heading"><div><span>LOGISTICS INTERFACE</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1><p>Manage paid KhetLink deliveries, offers and live shipment operations.</p></div><button className="log-refresh" onClick={load}>Refresh</button></div>
-    {error&&<div className="log-alert">{error}</div>}{notice&&<div className="log-success">{notice}</div>}
-    {tab==='dashboard'&&<><div className="log-stats"><div><span>Open paid offers</span><strong>{offers.length}</strong></div><div><span>Accepted deliveries</span><strong>—</strong></div><div><span>Live shipments</span><strong>—</strong></div><div><span>Location</span><strong>{profile?.location||'Not set'}</strong></div></div><section className="log-panel"><div className="log-panel-head"><div><h2>Available transport offers</h2><p>Only paid orders are offered to logistics providers.</p></div><button onClick={()=>setTab('offers')}>View all</button></div><OfferList offers={offers.slice(0,3)} loading={loading} action={action}/></section></>}
-    {tab==='offers'&&<section className="log-panel"><div className="log-panel-head"><div><h2>Transport Offers</h2><p>Accept or decline offers through the backend.</p></div></div><OfferList offers={offers} loading={loading} action={action}/></section>}
-    {tab==='orders'&&<section className="log-panel"><h2>Orders / Deliveries</h2><p className="log-muted">Accepted delivery assignments appear here as they are created by the backend.</p><OfferList offers={offers.filter(o=>o.order.shipment?.status)} loading={loading} action={action}/></section>}
-    {tab==='shipment'&&<section className="log-panel"><h2>Live Shipment</h2><div className="log-map-grid"><div className="log-map-placeholder"><MapPin size={34}/><b>Live route map</b><span>Provider location is supplied from the device and stored by the backend.</span></div><div><h3>Shipment controls</h3><p className="log-muted">Shipment state is controlled by backend verification codes and the required location checkpoints.</p><ul><li>Confirmed → Processing at farmer</li><li>Processing → In Transit at storehouse</li><li>In Transit → Delivered at buyer</li></ul></div></div></section>}
-    {tab==='analytics'&&<section className="log-panel"><h2>Analytics</h2><div className="log-empty"><BarChart3 size={32}/><b>Delivery analytics</b><span>Completed trips, earnings and route performance will populate from backend shipment data.</span></div></section>}
-    {tab==='help'&&<section className="log-panel"><h2>Help & Support</h2><div className="log-help"><CircleHelp/><div><b>Need assistance?</b><p>Create a support ticket from the KhetLink support flow when a delivery, offer or verification code needs attention.</p></div></div></section>}
-    {tab==='profile'&&<section className="log-panel"><h2>Logistics Profile</h2><div className="log-profile"><div className="log-avatar large">{profile?.profileImage?<img src={profile.profileImage} alt=""/>:initials}</div><div><h3>{profile?.firstName} {profile?.lastName}</h3><p>{profile?.location||'Location not set'}</p><p className="log-muted">Your centralized KhetLink profile is shared across role interfaces.</p></div></div></section>}
-   </main>
-  </div>
- </div>
+import type { Metadata } from "next";
+import Logistics from "../../components/Logistics";
+export const metadata: Metadata = { title: "KhetLink | Logistics Interface" };
+export default function LogisticsPage() {
+  return <Logistics />;
 }
-function OfferList({offers,loading,action}:{offers:Offer[];loading:boolean;action:(id:string,k:"accept"|"decline")=>void}){if(loading)return <div className="log-empty">Loading offers…</div>;if(!offers.length)return <div className="log-empty"><Truck size={30}/><b>No transport offers</b><span>New offers appear when paid orders are ready for logistics assignment.</span></div>;return <div className="log-offers">{offers.map(o=><article className="log-offer" key={o.id}><div className="log-offer-main"><div className="log-offer-title"><b>Order {o.order.id}</b><span>Paid order</span></div>{o.order.items.map((i,n)=><div key={n} className="log-product">{i.product.name} · {i.quantity} {i.unit}</div>)}<div className="log-route"><MapPin size={15}/><span>{o.order.shipment?.pickupLocation??'Pickup'} → {o.order.shipment?.deliveryLocation??'Delivery'}</span></div><small>{o.order.shipment?.distanceKm??'—'} km · ETA {o.order.shipment?.etaMinutes??'—'} min</small></div><div className="log-offer-actions"><button className="accept" onClick={()=>action(o.id,'accept')}><Check size={16}/>Accept</button><button className="decline" onClick={()=>action(o.id,'decline')}><X size={16}/>Decline</button></div></article>)}</div>}

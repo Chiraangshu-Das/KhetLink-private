@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../lib/prisma.js";
 
-export interface AuthRequest extends Request { userId?: string }
+export interface AuthRequest extends Request { userId?: string; role?: "BUYER" | "FARMER" | "LOGISTICS"; }
 const secret = process.env.JWT_SECRET;
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
@@ -19,9 +19,24 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
 
 export function requireRole(...roles: Array<"BUYER" | "FARMER" | "LOGISTICS">) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.userId) return res.status(401).json({ error: "Not authenticated" });
-    const active = await prisma.userRole.findFirst({ where: { userId: req.userId, role: { in: roles } } });
-    if (!active) return res.status(403).json({ error: "Required role is not activated" });
+    if (!req.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const active = await prisma.userRole.findFirst({
+      where: {
+        userId: req.userId,
+        role: { in: roles },
+      },
+    });
+
+    if (!active) {
+      return res.status(403).json({
+        error: "Required role is not activated",
+      });
+    }
+
+    req.role = active.role;
     next();
   };
 }

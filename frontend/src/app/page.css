@@ -1,4 +1,7 @@
-/*GLOBAL*/
+/* =========================================================
+   GLOBAL
+========================================================= */
+
 :root {
   --primary-green: #0c7a43;
   --dark-green: #074021;
@@ -18,7 +21,10 @@
   -webkit-user-drag: none;
 }
 
-html {scroll-behavior: smooth; scrollbar-gutter: stable both-edges;}
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
 
 body {
   margin: 0;
@@ -28,90 +34,129 @@ body {
   overflow-x: hidden;
 }
 
-button,a {font: inherit;}
-button {cursor: pointer;}
-
-/*PAGE*/
-.page-container {
-  width: 100%;
-  min-height: 100vh;
+button,
+a {
+  font: inherit;
 }
 
-/*NAVBAR*/
+button {
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   NAVBAR
+   Buyer.css-inspired
+========================================================= */
+
 .navbar {
   width: 100%;
-  height: 64px;
-  padding: 0 clamp(1rem, 5vw, 4rem);
+  height: 72px;
+  min-height: 72px;
+  padding: 0 clamp(1rem, 3vw, 2rem);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.97);
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.96);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(28, 69, 47, 0.08);
+  box-shadow: 0 5px 24px rgba(17, 54, 36, 0.055);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .logo-group {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 9px;
+  min-width: 150px;
 }
 
 .logo-icon-slot {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
 }
 
-.logo-icon-slot img { display: block;}
+.logo-icon-slot img {
+  display: block;
+}
 
 .brand-title {
   color: var(--dark-green);
-  font-size: 1.25rem;
+  font-size: 1.18rem;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
 .brand-subtitle {
+  display: block;
   margin-top: 3px;
   color: rgb(1, 255, 128);
-  font-size: 0.5rem;
+  font-size: 0.48rem;
   font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
 }
 
 .nav-links {
+  height: 72px;
   display: flex;
   align-items: center;
-  gap: clamp(0.8rem, 2vw, 1.8rem);
+  gap: 2px;
 }
 
 .nav-links a {
   position: relative;
-  padding: 0.4rem 0;
-  color: #193b29;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 9px;
+  color: #59655e;
   text-decoration: none;
-  font-size: 0.76rem;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
 
-.nav-links a.active, .nav-links a:hover { color: var(--primary-green); }
+.nav-links a:hover {
+  color: var(--primary-green);
+  background: #f6faf7;
+}
+
+.nav-links a.active {
+  color: var(--dark-green);
+  background: #f0f8f3;
+}
 
 .nav-links a.active::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -5px;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
   height: 2px;
-  border-radius: 999px;
+  border-radius: 2px 2px 0 0;
   background: var(--primary-green);
 }
 
 .auth-btns {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .landing-language-selector {
@@ -131,7 +176,8 @@ button {cursor: pointer;}
   border-color: var(--primary-green);
 }
 
-.btn-login, .btn-signup {
+.btn-login,
+.btn-signup {
   height: 34px;
   padding: 0 0.95rem;
   display: inline-flex;
@@ -143,12 +189,35 @@ button {cursor: pointer;}
   font-weight: 700;
 }
 
-.btn-login { color: white; border: 1px solid transparent; background: var(--primary-green); }
-.btn-login:active { color: var(--primary-green); background: white; border: 1px solid var(--primary-green); }
-.btn-signup { color: var(--primary-green); border: 1px solid var(--primary-green); background: white; }
-.btn-signup:active { color:white; background-color: var(--primary-green); border: 1px solid transparent; }
+.btn-login {
+  color: white;
+  border: 1px solid transparent;
+  background: var(--primary-green);
+}
 
-/*HERO*/
+.btn-login:active {
+  color: var(--primary-green);
+  background: white;
+  border: 1px solid var(--primary-green);
+}
+
+.btn-signup {
+  color: var(--primary-green);
+  border: 1px solid var(--primary-green);
+  background: white;
+}
+
+.btn-signup:active {
+  color: white;
+  background-color: var(--primary-green);
+  border: 1px solid transparent;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
 .hero-wrapper {
   position: relative;
   width: 100%;
@@ -156,7 +225,7 @@ button {cursor: pointer;}
   overflow: hidden;
   display: flex;
   align-items: flex-start;
-  background: url("/background.png") center 15% /cover no-repeat;
+  background: url("/background.png") center 15% / cover no-repeat;
   animation: hero-parallax linear both;
   animation-timeline: scroll();
   animation-range: 0 700px;
@@ -182,7 +251,9 @@ button {cursor: pointer;}
   letter-spacing: -0.04em;
 }
 
-.hero-title span { color: #078844; }
+.hero-title span {
+  color: #078844;
+}
 
 .hero-desc {
   max-width: 490px;
@@ -226,7 +297,11 @@ button {cursor: pointer;}
   background: rgba(255, 255, 255, 0.86);
 }
 
-/*HERO NETWORK*/
+
+/* =========================================================
+   HERO NETWORK
+========================================================= */
+
 .hero-network {
   position: absolute;
   z-index: 4;
@@ -275,15 +350,38 @@ button {cursor: pointer;}
   object-fit: contain;
 }
 
-.farmer-network-icon { background: #dcfce7; }
-.logistics-network-icon { background: #dbeafe; }
-.buyer-network-icon { background: #ffedd5; }
+.farmer-network-icon {
+  background: #dcfce7;
+}
 
-.farmer-node { left: 10px; top: 60px; }
-.logistics-node { left: 40%; top: 10px; }
-.buyer-node { right: 20px; top: 90px; }
+.logistics-network-icon {
+  background: #dbeafe;
+}
 
-/* DOTTED CONNECTIONS */
+.buyer-network-icon {
+  background: #ffedd5;
+}
+
+.farmer-node {
+  left: 10px;
+  top: 60px;
+}
+
+.logistics-node {
+  left: 40%;
+  top: 10px;
+}
+
+.buyer-node {
+  right: 20px;
+  top: 90px;
+}
+
+
+/* =========================================================
+   DOTTED CONNECTIONS
+========================================================= */
+
 .network-line {
   position: absolute;
   height: 75px;
@@ -291,10 +389,25 @@ button {cursor: pointer;}
   border-radius: 50%;
 }
 
-.line-1 { left: 52px; top: 37px; width: 190px; transform: rotate(-15deg); }
-.line-2 { right: 60px; top: 50px; width: 190px; transform: rotate(28deg); }
+.line-1 {
+  left: 52px;
+  top: 37px;
+  width: 190px;
+  transform: rotate(-15deg);
+}
 
-/*HERO CURVE*/
+.line-2 {
+  right: 60px;
+  top: 50px;
+  width: 190px;
+  transform: rotate(28deg);
+}
+
+
+/* =========================================================
+   HERO CURVE
+========================================================= */
+
 .hero-wave-bottom {
   position: absolute;
   z-index: 6;
@@ -305,10 +418,20 @@ button {cursor: pointer;}
   display: block;
 }
 
-.hero-wave-bottom path { fill: var(--light-bg); }
+.hero-wave-bottom path {
+  fill: var(--light-bg);
+}
 
-/*SECTIONS*/
-section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 64px;}
+
+/* =========================================================
+   SECTIONS
+========================================================= */
+
+section {
+  width: 100%;
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+  scroll-margin-top: 72px;
+}
 
 .section-header {
   margin-bottom: 1.2rem;
@@ -316,6 +439,13 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   animation: reveal-up linear both;
   animation-timeline: view();
   animation-range: entry 0% cover 30%;
+}
+
+.section-header .section-title,
+.section-header .section-subtitle {
+  display: block;
+  width: 100%;
+  white-space: normal;
 }
 
 .section-title {
@@ -333,10 +463,18 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   line-height: 1.4;
 }
 
-.text-left { text-align: left; }
+.text-left {
+  text-align: left;
+}
 
-/*ROLE SECTION*/
-.role-section { padding-top: 0.5rem; }
+
+/* =========================================================
+   ROLE SECTION
+========================================================= */
+
+.role-section {
+  padding-top: 0.5rem;
+}
 
 .roles-grid {
   width: 100%;
@@ -362,11 +500,22 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   animation-range: entry 0% cover 30%;
 }
 
-.role-card > * { position: relative; z-index: 2; }
+.role-card > * {
+  position: relative;
+  z-index: 2;
+}
 
-.role-card:nth-child(1) { animation-delay: 0ms; }
-.role-card:nth-child(2) { animation-delay: 100ms; } 
-.role-card:nth-child(3) { animation-delay: 200ms; }
+.role-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.role-card:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.role-card:nth-child(3) {
+  animation-delay: 200ms;
+}
 
 .role-card.farmer {
   background: #f0fff5;
@@ -501,7 +650,10 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 }
 
 
-/*HOW IT WORKS */
+/* =========================================================
+   HOW IT WORKS
+========================================================= */
+
 .how-section {
   padding-top: 1.3rem;
 }
@@ -511,7 +663,7 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   max-width: 1180px;
   margin: 1rem auto 0;
   display: grid;
-  grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
   align-items: start;
   gap: 0.7rem;
 }
@@ -578,18 +730,20 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   animation: fade-in linear both;
   animation-timeline: scroll();
   animation-range: entry 10% cover 30%;
-
 }
 
 
-/*BENEFITS*/
+/* =========================================================
+   BENEFITS
+========================================================= */
+
 .benefits-box {
   width: 100%;
   max-width: 1180px;
   margin: 1.8rem auto 0;
   padding: 1.3rem;
   border-radius: 22px;
-  background: linear-gradient( 135deg, #e0f9e6, #d4f5dd);
+  background: linear-gradient(135deg, #e0f9e6, #d4f5dd);
 }
 
 .benefits-header {
@@ -645,7 +799,10 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 }
 
 
-/*REVENUE MODEL*/
+/* =========================================================
+   REVENUE MODEL
+========================================================= */
+
 .revenue-section {
   padding-top: 0.5rem;
 }
@@ -719,13 +876,18 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 }
 
 
-/*IMPACT*/
+/* =========================================================
+   IMPACT
+========================================================= */
+
 .impact-banner {
   width: 100%;
   padding: 2.5rem clamp(1rem, 5vw, 3rem);
   color: white;
   text-align: center;
-  background: linear-gradient( rgba(4, 76, 40, 0.78), rgba(4, 76, 40, 0.78)), url("/background.png") center 65% / cover no-repeat;
+  background:
+    linear-gradient(rgba(4, 76, 40, 0.78), rgba(4, 76, 40, 0.78)),
+    url("/background.png") center 65% / cover no-repeat;
 }
 
 .impact-title {
@@ -761,7 +923,9 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   animation-range: entry 0% cover 30%;
 }
 
-.impact-Farmer{ filter: brightness(290%) saturate(60%) hue-rotate(20deg); }
+.impact-Farmer {
+  filter: brightness(290%) saturate(60%) hue-rotate(20deg);
+}
 
 .impact-icon {
   width: 30px;
@@ -784,7 +948,10 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 }
 
 
-/*CTA*/
+/* =========================================================
+   CTA
+========================================================= */
+
 .cta-section {
   padding: 1.6rem clamp(1rem, 4vw, 3rem);
 }
@@ -837,7 +1004,10 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 }
 
 
-/*FOOTER*/
+/* =========================================================
+   FOOTER
+========================================================= */
+
 .footer-container {
   width: 100%;
   padding: 1.8rem clamp(1rem, 5vw, 3rem) 1rem;
@@ -859,7 +1029,7 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 }
 
 .footer-logo-container {
-  background: #a7f3d0; 
+  background: #a7f3d0;
   border-radius: 50%;
 }
 
@@ -933,19 +1103,36 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   gap: 0.3rem;
 }
 
-/*HOVER EFFECTS*/
-.btn-primary, .btn-secondary, .role-btn, .btn-login, .btn-signup {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+/* =========================================================
+   HOVER EFFECTS
+========================================================= */
+
+.btn-primary,
+.btn-secondary,
+.role-btn,
+.btn-login,
+.btn-signup {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
-.btn-primary:hover, .btn-secondary:hover, .role-btn:hover {
+.btn-primary:hover,
+.btn-secondary:hover,
+.role-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12);
 }
 
-.btn-secondary:hover { background: #f2faf5; }
+.btn-secondary:hover {
+  background: #f2faf5;
+}
 
-.role-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.role-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
 .role-card:hover {
   transform: translateY(-3px);
@@ -965,14 +1152,28 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 /* =========================================================
    TABLET
 ========================================================= */
+
 @media (max-width: 1000px) {
 
   .navbar {
+    height: 60px;
+    min-height: 60px;
     padding: 0 1.5rem;
   }
 
   .nav-links {
-    gap: 1rem;
+    height: 60px;
+    gap: 1px;
+  }
+
+  .nav-links a {
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .nav-links a.active::after {
+    left: 8px;
+    right: 8px;
   }
 
   .hero-network {
@@ -984,26 +1185,619 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   .workflow-row {
     gap: 0.4rem;
   }
-
 }
 
 
 /* =========================================================
-   MOBILE / TABLET
+   LANDING ACCOUNT / LANGUAGE
+========================================================= */
+
+.landing-user-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d7efe0;
+  color: var(--dark-green);
+  font-weight: 800;
+  font-size: 10px;
+  border: 1px solid #cfe6d7;
+}
+
+.landing-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.landing-language-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.landing-language-button {
+  height: 38px;
+  min-width: 105px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dfe8e2;
+  border-radius: 9px;
+  background: #fff;
+  color: #34483d;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-language-button:hover {
+  border-color: #c9ddd0;
+  background: #f4faf6;
+  box-shadow: 0 4px 12px rgba(12, 122, 67, 0.07);
+}
+
+.landing-language-button:focus-visible {
+  border-color: var(--primary-green);
+  outline: 2px solid rgba(12, 122, 67, 0.16);
+  outline-offset: 2px;
+}
+
+.landing-language-button:active {
+  transform: scale(0.97);
+}
+
+.landing-language-menu {
+  position: absolute;
+  right: 0;
+  top: 46px;
+  width: 190px;
+  max-height: 330px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #dfe8e2;
+  border-radius: 11px;
+  box-shadow: 0 18px 45px rgba(16, 42, 29, 0.14);
+  z-index: 180;
+  animation: landing-language-menu-in 0.18s ease both;
+  transform-origin: top right;
+}
+
+.landing-language-menu button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #30483b;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.landing-language-menu button:hover {
+  background: #eef8f1;
+  color: var(--primary-green);
+  transform: translateX(2px);
+}
+
+@keyframes landing-language-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+/* =========================================================
+   ACCOUNT BUTTON
+========================================================= */
+
+.landing-user-button {
+  height: 38px;
+  padding: 4px 6px 4px 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-user-button:hover {
+  background: #f4f8f5;
+}
+
+.landing-user-button:active {
+  transform: scale(0.97);
+}
+
+.landing-user-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.landing-user-copy strong {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.landing-user-copy small {
+  margin-top: 2px;
+  color: #77827c;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.landing-logout-button {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e7d5d5;
+  border-radius: 9px;
+  color: #9a3c36;
+  background: #fff8f8;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-logout-button:hover {
+  background: #fff0f0;
+  border-color: #e0b8b8;
+}
+
+.landing-logout-button:active {
+  transform: scale(0.94);
+}
+
+
+/* =========================================================
+   MOBILE MENU BUTTON
+   Buyer.css-inspired
+========================================================= */
+
+.landing-mobile-menu-button {
+  display: none;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dce6df;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--dark-green);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-mobile-menu-button:hover {
+  border-color: #c9ddd0;
+  background: #f4faf6;
+  box-shadow: 0 4px 12px rgba(12, 122, 67, 0.07);
+}
+
+.landing-mobile-menu-button:active {
+  transform: scale(0.94);
+}
+
+
+/* =========================================================
+   MOBILE SIDEBAR
+   Buyer.css-inspired
+========================================================= */
+
+.landing-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  border: 0;
+  background: rgba(7, 29, 18, 0.42);
+  backdrop-filter: blur(3px);
+  animation: landing-backdrop-in 0.2s ease both;
+}
+
+@keyframes landing-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.landing-mobile-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 200;
+  width: 272px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: linear-gradient(
+    180deg,
+    #075d36 0%,
+    #087a43 55%,
+    #0a6840 100%
+  );
+  color: #fff;
+  border-right: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: 16px 0 36px rgba(0, 49, 25, 0.18);
+  transform: translateX(-105%);
+  transition: transform 0.24s cubic-bezier(0.22, 0.8, 0.25, 1);
+}
+
+.landing-mobile-sidebar.open {
+  transform: translateX(0);
+}
+
+.landing-mobile-sidebar-header {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 28px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.landing-mobile-sidebar-header strong {
+  color: #fff;
+  font-size: 16px;
+}
+
+.landing-mobile-sidebar-header > button {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #fff;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s ease;
+}
+
+.landing-mobile-sidebar-header > button svg {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.landing-mobile-sidebar-header > button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: rotate(4deg);
+}
+
+.landing-mobile-sidebar-header > button:hover svg {
+  transform: rotate(90deg);
+}
+
+.landing-mobile-sidebar-header > button:active {
+  transform: rotate(90deg) scale(0.94);
+}
+
+.landing-mobile-sidebar-nav {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+}
+
+.landing-mobile-sidebar-nav a {
+  position: relative;
+  min-height: 42px;
+  padding: 11px 12px;
+  display: flex;
+  align-items: center;
+  border-radius: 9px;
+  color: rgba(255, 255, 255, 0.76);
+  text-decoration: none;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.landing-mobile-sidebar-nav a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  transform: none;
+}
+
+.landing-mobile-sidebar-nav a.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 3px 0 #b9e779;
+}
+
+.landing-mobile-sidebar-bottom {
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.landing-mobile-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.landing-mobile-account > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.landing-mobile-account strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 11px;
+}
+
+.landing-mobile-account small {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 9px;
+}
+
+.landing-mobile-logout {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-weight: 800;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-mobile-logout:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: none;
+}
+
+.landing-mobile-logout:active {
+  transform: scale(0.98);
+}
+
+.landing-mobile-auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.landing-mobile-auth .btn-login,
+.landing-mobile-auth .btn-signup {
+  width: 100%;
+}
+
+
+/* =========================================================
+   MOBILE NAVBAR
 ========================================================= */
 
 @media (max-width: 800px) {
 
-  .navbar {
-    height: 60px;
-
-    padding:
-      0
-      1rem;
-  }
+  /*
+     Hide the desktop navigation links.
+     The mobile sidebar becomes the navigation.
+  */
 
   .nav-links {
     display: none;
+  }
+
+  .navbar {
+    height: 60px;
+    min-height: 60px;
+    padding: 0 1rem;
+    gap: 8px;
+  }
+
+  .landing-mobile-menu-button {
+    display: inline-flex;
+  }
+
+  .navbar > a {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .navbar > a .logo-group {
+    min-width: 0;
+  }
+
+  .navbar > a .brand-subtitle {
+    white-space: nowrap;
+  }
+
+  /*
+     Keep language and account controls visible.
+  */
+
+  .auth-btns {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  .auth-btns > .landing-language-wrap,
+  .auth-btns > .landing-user-button,
+  .auth-btns > .landing-logout-button {
+    display: inline-flex;
+  }
+
+  /*
+     Logged-out state.
+  */
+
+  .auth-btns > .btn-login {
+    display: inline-flex;
+    width: 38px;
+    height: 34px;
+    padding: 0;
+    gap: 0;
+    border-radius: 9px;
+  }
+
+  .auth-btns > .btn-login svg {
+    display: inline-flex;
+  }
+
+  .auth-btns > .btn-signup {
+    display: none;
+  }
+
+  /*
+     Logged-in profile.
+  */
+
+  .auth-btns > .landing-user-button {
+    width: 38px;
+    height: 38px;
+    padding: 2px;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .auth-btns > .landing-user-button .landing-user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .auth-btns > .landing-user-button .landing-user-copy {
+    display: none;
+  }
+
+  /*
+     Compact language selector.
+  */
+
+  .auth-btns > .landing-language-wrap .landing-language-button {
+    width: 38px;
+    min-width: 38px;
+    height: 34px;
+    padding: 0;
+    gap: 0;
+    border-radius: 9px;
+  }
+
+  .auth-btns > .landing-language-wrap .landing-language-button span {
+    display: none;
+  }
+
+  .auth-btns > .landing-language-wrap .landing-language-button svg:last-child {
+    display: none;
+  }
+
+  .auth-btns > .landing-language-wrap .landing-language-button svg:first-child {
+    display: inline-flex;
+  }
+
+  .landing-language-menu {
+    right: 0;
+    top: 40px;
+    width: 180px;
+    max-height: 300px;
+  }
+
+  /*
+     Remove visible browser scrollbar on mobile
+     while keeping page scrolling functional.
+  */
+
+  html,
+  body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+
+  .landing-mobile-sidebar,
+  .landing-language-menu {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .landing-mobile-sidebar::-webkit-scrollbar,
+  .landing-language-menu::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
 
   .hero-wrapper {
@@ -1012,10 +1806,7 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 
   .hero-overlay-content {
     width: 100%;
-
-    padding:
-      2.3rem
-      1.5rem;
+    padding: 2.3rem 1.5rem;
   }
 
   .hero-title {
@@ -1024,20 +1815,16 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 
   .hero-desc {
     max-width: 470px;
-
     font-size: 0.76rem;
   }
 
   .hero-network {
     top: 320px;
     right: 50%;
-
     width: 360px;
-
     transform:
       translateX(50%)
       scale(0.9);
-
     transform-origin: top center;
   }
 
@@ -1055,7 +1842,6 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 
   .workflow-row {
     grid-template-columns: 1fr;
-
     gap: 0.8rem;
   }
 
@@ -1064,23 +1850,18 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   }
 
   .step-arrow {
-    margin:
-      0
-      auto;
-
+    margin: 0 auto;
     transform: rotate(90deg);
   }
 
   .revenue-card {
     flex-direction: column;
-
     align-items: stretch;
   }
 
   .revenue-graphic {
     display: none;
   }
-
 }
 
 
@@ -1092,6 +1873,15 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 
   .navbar {
     height: 58px;
+    min-height: 58px;
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+    gap: 5px;
+  }
+
+  .landing-mobile-menu-button {
+    width: 34px;
+    height: 34px;
   }
 
   .logo-icon-slot img {
@@ -1107,34 +1897,116 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
     font-size: 0.42rem;
   }
 
+  .navbar > a .logo-group {
+    gap: 0.4rem;
+  }
+
   .auth-btns {
-    gap: 0.3rem;
+    gap: 4px;
   }
 
-  .btn-login,
-  .btn-signup {
-    height: 30px;
+  /*
+     Mobile language.
+  */
 
-    padding:
-      0
-      0.65rem;
-
-    font-size: 0.6rem;
+  .auth-btns > .landing-language-wrap .landing-language-button {
+    width: 33px;
+    min-width: 33px;
+    height: 32px;
+    padding: 0;
   }
 
-  .btn-login svg,
-  .btn-signup svg {
-    display: none;
+  /*
+     Mobile login.
+  */
+
+  .auth-btns > .btn-login {
+    width: 33px;
+    min-width: 33px;
+    height: 32px;
+    padding: 0;
   }
+
+  .auth-btns > .btn-login svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /*
+     Mobile profile.
+  */
+
+  .auth-btns > .landing-user-button {
+    width: 33px;
+    min-width: 33px;
+    height: 33px;
+    padding: 2px;
+  }
+
+  .auth-btns > .landing-user-button .landing-user-avatar {
+    width: 29px;
+    height: 29px;
+    font-size: 9px;
+  }
+
+  /*
+     Language menu.
+  */
+
+  .landing-language-menu {
+    right: -2px;
+    top: 39px;
+    width: 175px;
+    max-height: 285px;
+  }
+
+  /*
+     Buyer-style sidebar dimensions.
+  */
+
+  .landing-mobile-sidebar {
+    width: min(272px, 84vw);
+    padding: 18px 14px;
+  }
+
+  .landing-mobile-sidebar-header {
+    min-height: 48px;
+    margin-bottom: 28px;
+  }
+
+  .landing-mobile-sidebar-header > button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .landing-mobile-sidebar-nav {
+    gap: 4px;
+  }
+
+  .landing-mobile-sidebar-nav a {
+    min-height: 42px;
+    padding: 11px 12px;
+    font-size: 12px;
+  }
+
+  .landing-mobile-sidebar-bottom {
+    padding-top: 18px;
+  }
+
+  .landing-mobile-account {
+    padding: 10px;
+  }
+
+  /*
+     Existing landing-page mobile layout.
+  */
 
   .hero-wrapper {
     height: 550px;
   }
 
   .hero-overlay-content {
-    padding:
-      2rem
-      1.2rem;
+    padding: 2rem 1.2rem;
   }
 
   .hero-title {
@@ -1143,7 +2015,6 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 
   .hero-desc {
     max-width: 330px;
-
     font-size: 0.72rem;
   }
 
@@ -1154,28 +2025,20 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   .btn-primary,
   .btn-secondary {
     height: 35px;
-
-    padding:
-      0
-      1rem;
-
+    padding: 0 1rem;
     font-size: 0.65rem;
   }
 
   .hero-network {
     top: 320px;
-
     width: 315px;
-
     transform:
       translateX(50%)
       scale(0.82);
   }
 
   section {
-    padding:
-      1.5rem
-      0.8rem;
+    padding: 1.5rem 0.8rem;
   }
 
   .section-title {
@@ -1210,11 +2073,8 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
 
   .cta-banner {
     flex-direction: column;
-
     gap: 1rem;
-
     padding: 1.2rem;
-
     text-align: center;
   }
 
@@ -1223,35 +2083,32 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   }
 
   .footer-container {
-    padding:
-      1.5rem
-      1rem
-      1rem;
+    padding: 1.5rem 1rem 1rem;
   }
 
   .footer-top {
     flex-direction: column;
-
     gap: 1.2rem;
   }
 
   .footer-nav-links {
     flex-wrap: wrap;
-
     justify-content: center;
-
     gap: 0.8rem;
   }
 
   .footer-bottom {
     flex-direction: column;
-
     gap: 0.5rem;
-
     text-align: center;
   }
-
 }
+
+
+/* =========================================================
+   DESKTOP SCROLLBAR
+   Keep the existing custom scrollbar on desktop.
+========================================================= */
 
 ::-webkit-scrollbar {
   width: 9px;
@@ -1291,12 +2148,9 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
     #16a34a,
     #0c7a43
   );
-
   border-radius: 999px;
   border: 2px solid transparent;
-
   background-clip: padding-box;
-
   box-shadow:
     0 0 6px rgba(12, 122, 67, 0.15);
 }
@@ -1307,13 +2161,13 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
     #22c55e,
     #096b3a
   );
-
   background-clip: padding-box;
 }
 
-/* =====================================================
+
+/* =========================================================
    SCROLL-DRIVEN ANIMATIONS
-===================================================== */
+========================================================= */
 
 @keyframes reveal-up {
   from {
@@ -1419,7 +2273,13 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
   }
 }
 
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -1427,359 +2287,1108 @@ section { width: 100%; padding: 2rem clamp(1rem, 4vw, 3rem); scroll-margin-top: 
     animation-iteration-count: 1 !important;
     animation-timeline: auto !important;
   }
-}.landing-user-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#e8f4ec;color:#145b32;font-weight:700;font-size:12px;border:1px solid #cfe6d7}.landing-user-avatar img{width:100%;height:100%;object-fit:cover}
 
+  .landing-mobile-sidebar {
+    transition: none;
+  }
+
+  .landing-mobile-sidebar-header > button,
+  .landing-mobile-sidebar-header > button svg,
+  .landing-language-button,
+  .landing-user-button,
+  .landing-mobile-menu-button,
+  .landing-mobile-sidebar-nav a,
+  .landing-mobile-logout,
+  .landing-language-menu button {
+    transition: none;
+  }
+
+  .landing-language-menu,
+  .landing-sidebar-backdrop {
+    animation: none;
+  }
+}
 /* =========================================================
-   LANDING PAGE POLISH — account/language/mobile navigation
+   FINAL MOBILE NAVIGATION FIX
+   - Keep Sign Up visible
+   - Show complete language selector
+   - Properly center desktop nav items
+   - Center mobile sidebar navigation items
+   - Keep profile/logout behavior intact
+   - Do not disable page scrolling
 ========================================================= */
 
-.section-header {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  clear: both;
-}
 
-.section-header .section-title,
-.section-header .section-subtitle {
-  display: block;
-  width: 100%;
-  white-space: normal;
-}
+/* =========================================================
+   DESKTOP — PROPERLY CENTER NAVIGATION ITEMS
+========================================================= */
 
-.landing-language-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.landing-language-button {
-  height: 34px;
-  min-width: 105px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid #dfe8e2;
-  border-radius: 8px;
-  background: #fff;
-  color: #34483d;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.landing-language-button:hover,
-.landing-language-button:focus-visible {
-  border-color: var(--primary-green);
-  outline: none;
-}
-
-.landing-language-menu {
-  position: absolute;
-  right: 0;
-  top: 42px;
-  width: 190px;
-  max-height: 330px;
-  overflow-y: auto;
-  padding: 6px;
-  background: #fff;
-  border: 1px solid #dfe8e2;
-  border-radius: 10px;
-  box-shadow: 0 18px 45px rgba(16,42,29,.14);
-  z-index: 180;
-}
-
-.landing-language-menu button {
-  display: block;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: #30483b;
-  text-align: left;
-  padding: 9px 10px;
-  border-radius: 7px;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.landing-language-menu button:hover {
-  background: #eef8f1;
-  color: var(--primary-green);
-}
-
-.landing-user-button {
-  height: 38px;
-  padding: 2px 7px 2px 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid #dfe8e2;
-  border-radius: 10px;
-  background: #fff;
-  color: #20382b;
-  cursor: pointer;
-}
-
-.landing-user-button:hover {
-  border-color: #bcd8c6;
-  background: #f8fcf9;
-}
-
-.landing-user-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.05;
-}
-
-.landing-user-copy strong {
-  max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.landing-user-copy small {
-  margin-top: 3px;
-  color: #718278;
-  font-size: 8px;
-  font-weight: 700;
-}
-
-.landing-logout-button {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e7d5d5;
-  border-radius: 8px;
-  color: #9a3c36;
-  background: #fff8f8;
-}
-
-.landing-logout-button:hover {
-  background: #fff0f0;
-  border-color: #e0b8b8;
-}
-
-.landing-mobile-menu-button {
-  display: none;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #dfe8e2;
-  border-radius: 9px;
-  background: #fff;
-  color: var(--dark-green);
-}
-
-.landing-sidebar-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 190;
-  border: 0;
-  background: rgba(8, 27, 17, .28);
-  backdrop-filter: blur(2px);
-}
-
-.landing-mobile-sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 200;
-  width: min(310px, 86vw);
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  background: #fff;
-  box-shadow: 16px 0 45px rgba(20,55,39,.16);
-  transform: translateX(-105%);
-  transition: transform .24s ease;
-}
-
-.landing-mobile-sidebar.open {
-  transform: translateX(0);
-}
-
-.landing-mobile-sidebar-header {
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e8eee9;
-}
-
-.landing-mobile-sidebar-header > button {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #dfe8e2;
-  border-radius: 8px;
-  background: #fff;
-  color: #375343;
-}
-
-.landing-mobile-sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 0;
-}
-
-.landing-mobile-sidebar-nav a {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
-  padding: 0 12px;
-  border-radius: 9px;
-  color: #294336;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.landing-mobile-sidebar-nav a:hover,
-.landing-mobile-sidebar-nav a.active {
-  color: var(--primary-green);
-  background: #eef8f1;
-}
-
-.landing-mobile-sidebar-bottom {
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #e8eee9;
-}
-
-.landing-mobile-account {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px;
-}
-
-.landing-mobile-account > span:last-child {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.landing-mobile-account strong {
-  font-size: 11px;
-}
-
-.landing-mobile-account small {
-  margin-top: 3px;
-  color: #718278;
-  font-size: 9px;
-}
-
-.landing-mobile-logout {
-  width: 100%;
-  min-height: 38px;
-  margin-top: 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid #e7d5d5;
-  border-radius: 8px;
-  color: #9a3c36;
-  background: #fff8f8;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.landing-mobile-auth {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
-
-.landing-mobile-auth .btn-login,
-.landing-mobile-auth .btn-signup {
-  width: 100%;
-}
-
-@media (max-width: 800px) {
-  .landing-mobile-menu-button {
-    display: inline-flex;
-  }
+@media (min-width: 801px) {
 
   .navbar {
-    gap: 8px;
+    position: sticky;
+    isolation: isolate;
   }
+
+  .nav-links {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    white-space: nowrap;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE NAVBAR
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .navbar {
+    width: 100%;
+    height: 60px;
+    min-height: 60px;
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 7px;
+    overflow: visible;
+  }
+
+
+  /* ---------- MOBILE LOGO ---------- */
 
   .navbar > a {
     min-width: 0;
-    flex: 1;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
   }
 
   .navbar > a .logo-group {
     min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .navbar > a .brand-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .navbar > a .brand-subtitle {
     white-space: nowrap;
   }
 
+
+  /* ---------- RIGHT SIDE CONTROLS ---------- */
+
   .auth-btns {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    min-width: 0;
+  }
+
+
+  /* =======================================================
+     LANGUAGE SELECTOR
+     SHOW THE COMPLETE SELECTOR — NOT JUST THE ICON
+  ======================================================= */
+
+  .auth-btns > .landing-language-wrap {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    position: relative;
+  }
+
+  .auth-btns > .landing-language-wrap .landing-language-button {
+    width: auto !important;
+    min-width: 76px !important;
+    height: 34px !important;
+    padding: 0 9px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 5px !important;
+    border: 1px solid #dfe8e2;
+    border-radius: 9px;
+    white-space: nowrap;
+  }
+
+  /*
+     Do NOT hide the language text anymore.
+  */
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button span {
+    display: inline-flex !important;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  /*
+     Keep the language/globe icon visible.
+  */
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:first-child {
+    display: inline-flex !important;
     flex-shrink: 0;
   }
 
-  .auth-btns > .landing-language-wrap,
-  .auth-btns > .landing-user-button,
-  .auth-btns > .landing-logout-button {
+  /*
+     Keep the dropdown chevron visible as well.
+  */
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:last-child {
+    display: inline-flex !important;
+    flex-shrink: 0;
+  }
+
+
+  /* ---------- LANGUAGE DROPDOWN ---------- */
+
+  .landing-language-menu {
+    right: 0;
+    top: 41px;
+    width: 180px;
+    max-width: calc(100vw - 20px);
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 10000;
+  }
+
+
+  /* =======================================================
+     LOGIN
+  ======================================================= */
+
+  .auth-btns > .btn-login {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 38px;
+    height: 34px;
+    padding: 0 10px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .auth-btns > .btn-login svg {
+    display: inline-flex !important;
+    flex-shrink: 0;
+  }
+
+
+  /* =======================================================
+     SIGN UP
+     THIS WAS PREVIOUSLY DISPLAY:NONE — NOW VISIBLE
+  ======================================================= */
+
+  .auth-btns > .btn-signup {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 60px;
+    height: 34px;
+    padding: 0 10px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .auth-btns > .btn-signup svg {
+    display: inline-flex !important;
+    flex-shrink: 0;
+  }
+
+
+  /* =======================================================
+     LOGGED-IN PROFILE
+     Keep profile avatar visible
+  ======================================================= */
+
+  .auth-btns > .landing-user-button {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    padding: 2px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+  }
+
+  .auth-btns > .landing-user-button .landing-user-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .auth-btns > .landing-user-button .landing-user-copy {
     display: none;
   }
-}
 
-@media (max-width: 550px) {
-  .landing-mobile-menu-button {
+
+  /* =======================================================
+     LOGOUT
+  ======================================================= */
+
+  .auth-btns > .landing-logout-button {
+    display: inline-flex !important;
+    flex: 0 0 auto;
     width: 34px;
     height: 34px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
   }
+
+
+  /* =======================================================
+     MOBILE MENU BUTTON
+  ======================================================= */
+
+  .landing-mobile-menu-button {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+  }
+
+
+  /* =======================================================
+     MOBILE SIDEBAR — CENTER NAV ITEMS
+  ======================================================= */
+
+  .landing-mobile-sidebar {
+    width: min(272px, 84vw);
+    padding: 18px 14px;
+  }
+
+  .landing-mobile-sidebar-nav {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 0;
+  }
+
+  .landing-mobile-sidebar-nav a {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    text-align: center;
+  }
+
+  .landing-mobile-sidebar-nav a.active {
+    justify-content: center;
+    text-align: center;
+    box-shadow: inset 3px 0 #b9e779;
+  }
+
+
+  /* ---------- SIDEBAR HEADER ---------- */
+
+  .landing-mobile-sidebar-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+
+  /* ---------- SIDEBAR BOTTOM ---------- */
+
+  .landing-mobile-sidebar-bottom {
+    width: 100%;
+  }
+
+
+  /* ---------- HIDE MOBILE SCROLLBAR WITHOUT DISABLING SCROLL ---------- */
+
+  html,
+  body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+
+  .landing-mobile-sidebar,
+  .landing-language-menu {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .landing-mobile-sidebar::-webkit-scrollbar,
+  .landing-language-menu::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE — KEEP EVERYTHING VISIBLE
+========================================================= */
+
+@media (max-width: 550px) {
 
   .navbar {
-    padding-left: .7rem;
-    padding-right: .7rem;
+    height: 58px;
+    min-height: 58px;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+    gap: 5px;
   }
 
-  .auth-btns .landing-language-button {
-    min-width: 34px;
-    width: 34px;
-    padding: 0 7px;
-  }
 
-  .auth-btns .landing-language-button span,
-  .auth-btns .landing-language-button svg:last-child {
-    display: none;
-  }
+  /* ---------- LOGO ---------- */
 
-  .landing-user-avatar {
+  .logo-icon-slot img {
     width: 30px;
     height: 30px;
   }
 
-  .landing-user-copy strong {
-    max-width: 75px;
+  .brand-title {
+    font-size: 1rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.4rem;
+  }
+
+
+  /* ---------- CONTROLS ---------- */
+
+  .auth-btns {
+    gap: 3px;
+  }
+
+
+  /* Complete language selector */
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button {
+    width: auto !important;
+    min-width: 70px !important;
+    height: 32px !important;
+    padding: 0 7px !important;
+    gap: 4px !important;
+    font-size: 9px;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button span {
+    display: inline-flex !important;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:first-child {
+    display: inline-flex !important;
+    width: 13px;
+    height: 13px;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:last-child {
+    display: inline-flex !important;
+    width: 11px;
+    height: 11px;
+  }
+
+
+  /* Login */
+
+  .auth-btns > .btn-login {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
+  .auth-btns > .btn-login svg {
+    display: inline-flex !important;
+  }
+
+
+  /* Sign Up */
+
+  .auth-btns > .btn-signup {
+    display: inline-flex !important;
+    min-width: 55px;
+    width: 55px;
+    height: 32px;
+    padding: 0 6px;
+    font-size: 9px;
+  }
+
+  .auth-btns > .btn-signup svg {
+    display: none;
+  }
+
+
+  /* Profile */
+
+  .auth-btns > .landing-user-button {
+    width: 32px;
+    height: 32px;
+    padding: 1px;
+  }
+
+  .auth-btns > .landing-user-button
+  .landing-user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+
+  /* Logout */
+
+  .auth-btns > .landing-logout-button {
+    width: 32px;
+    height: 32px;
+  }
+
+
+  /* Menu */
+
+  .landing-mobile-menu-button {
+    width: 32px;
+    height: 32px;
+  }
+
+
+  /* ---------- SIDEBAR ---------- */
+
+  .landing-mobile-sidebar {
+    width: min(272px, 84vw);
+    padding: 18px 14px;
+  }
+
+  .landing-mobile-sidebar-nav {
+    align-items: stretch;
+  }
+
+  .landing-mobile-sidebar-nav a {
+    min-height: 43px;
+    justify-content: center;
+    text-align: center;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .landing-mobile-sidebar-nav a.active {
+    justify-content: center;
+    text-align: center;
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .navbar {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    gap: 3px;
+  }
+
+  .logo-icon-slot img {
+    width: 27px;
+    height: 27px;
+  }
+
+  .brand-title {
+    font-size: 0.9rem;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .auth-btns {
+    gap: 2px;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button {
+    min-width: 64px !important;
+    width: 64px !important;
+    padding: 0 5px !important;
+    font-size: 8px;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:first-child {
+    width: 12px;
+    height: 12px;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:last-child {
+    width: 9px;
+    height: 9px;
+  }
+
+  .auth-btns > .btn-signup {
+    min-width: 51px;
+    width: 51px;
+    font-size: 8px;
+  }
+
+  .auth-btns > .btn-login,
+  .auth-btns > .landing-user-button,
+  .auth-btns > .landing-logout-button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+  }
+
+  .auth-btns > .landing-user-button
+  .landing-user-avatar {
+    width: 26px;
+    height: 26px;
+  }
+
+  .landing-mobile-menu-button {
+    width: 30px;
+    height: 30px;
+  }
+
+}
+/* =========================================================
+   FINAL MOBILE NAVBAR + HERO NETWORK FIX
+========================================================= */
+
+
+/* =========================================================
+   MOBILE NAVBAR — USE AVAILABLE WIDTH PROPERLY
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .navbar {
+    width: 100%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    gap: 8px;
+  }
+
+  /*
+     Give the logo the available flexible space.
+     This prevents the right-side controls from being
+     unnecessarily squeezed together.
+  */
+
+  .navbar > a {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+
+  .navbar > a .logo-group {
+    min-width: 0;
+    width: auto;
+  }
+
+
+  /* =======================================================
+     RIGHT-SIDE CONTROLS
+  ======================================================= */
+
+  .auth-btns {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+
+  /* =======================================================
+     LANGUAGE SELECTOR
+  ======================================================= */
+
+  .auth-btns > .landing-language-wrap {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button {
+    width: auto !important;
+    min-width: 82px !important;
+    height: 34px !important;
+    padding: 0 9px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 5px !important;
+    white-space: nowrap;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button span {
+    display: inline-flex !important;
+    white-space: nowrap;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg {
+    flex-shrink: 0;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:first-child {
+    display: inline-flex !important;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button svg:last-child {
+    display: inline-flex !important;
+  }
+
+
+  /* =======================================================
+     LOGIN
+  ======================================================= */
+
+  .auth-btns > .btn-login {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 64px;
+    height: 34px;
+    padding: 0 11px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .auth-btns > .btn-login svg {
+    display: inline-flex !important;
+    flex-shrink: 0;
+  }
+
+
+  /* =======================================================
+     SIGN UP
+  ======================================================= */
+
+  .auth-btns > .btn-signup {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 64px;
+    height: 34px;
+    padding: 0 11px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+
+  /* =======================================================
+     MOBILE MENU BUTTON
+  ======================================================= */
+
+  .landing-mobile-menu-button {
+    flex: 0 0 auto;
+  }
+
+
+  /* =======================================================
+     MOBILE HERO NETWORK
+  ======================================================= */
+
+  .hero-network {
+    /*
+       Keep the entire network inside the hero.
+    */
+    width: min(330px, calc(100vw - 32px));
+    height: 175px;
+    right: 50%;
+    top: 320px;
+    transform: translateX(50%) scale(0.88);
+    transform-origin: top center;
+    overflow: visible;
+  }
+
+  /*
+     Make network labels white on mobile.
+  */
+
+  .network-node strong,
+  .network-node span {
+    color: #ffffff;
+  }
+
+  /*
+     White connection lines.
+  */
+
+  .network-line {
+    border-top-color: #ffffff;
+  }
+
+  /*
+     Shorter connection geometry so the lines stop
+     around the nodes instead of extending beyond them.
+  */
+
+  .line-1 {
+    left: 55px;
+    top: 42px;
+    width: 135px;
+    height: 55px;
+    transform: rotate(-13deg);
+  }
+
+  .line-2 {
+    right: 55px;
+    top: 48px;
+    width: 135px;
+    height: 55px;
+    transform: rotate(20deg);
+  }
+
+
+  /*
+     Keep node positions inside the smaller network.
+  */
+
+  .farmer-node {
+    left: 2px;
+    top: 62px;
+  }
+
+  .logistics-node {
+    left: 50%;
+    top: 5px;
+    transform: translateX(-50%);
+  }
+
+  .buyer-node {
+    right: 2px;
+    top: 72px;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .landing-mobile-sidebar {
-    transition: none;
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 550px) {
+
+  .navbar {
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+    gap: 6px;
+  }
+
+  /*
+     Keep the logo flexible so the controls have
+     their own stable space.
+  */
+
+  .navbar > a {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .auth-btns {
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+
+
+  /* ---------- LANGUAGE ---------- */
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button {
+    min-width: 76px !important;
+    width: 76px !important;
+    height: 32px !important;
+    padding: 0 7px !important;
+    gap: 4px !important;
+    font-size: 9px;
+  }
+
+
+  /* ---------- LOGIN ---------- */
+
+  .auth-btns > .btn-login {
+    min-width: 58px;
+    width: 58px;
+    height: 32px;
+    padding: 0 7px;
+    font-size: 9px;
+  }
+
+
+  /* ---------- SIGN UP ---------- */
+
+  .auth-btns > .btn-signup {
+    min-width: 58px;
+    width: 58px;
+    height: 32px;
+    padding: 0 7px;
+    font-size: 9px;
+  }
+
+
+  /* ---------- HERO NETWORK ---------- */
+
+  .hero-network {
+    width: min(305px, calc(100vw - 28px));
+    height: 165px;
+    top: 320px;
+    right: 50%;
+    transform: translateX(50%) scale(0.82);
+    transform-origin: top center;
+  }
+
+  .network-node strong,
+  .network-node span {
+    color: #ffffff;
+  }
+
+  .network-line {
+    border-top-color: #ffffff;
+  }
+
+  .line-1 {
+    left: 48px;
+    top: 40px;
+    width: 122px;
+    height: 50px;
+    transform: rotate(-12deg);
+  }
+
+  .line-2 {
+    right: 48px;
+    top: 46px;
+    width: 122px;
+    height: 50px;
+    transform: rotate(18deg);
+  }
+
+  .farmer-node {
+    left: 0;
+    top: 60px;
+  }
+
+  .logistics-node {
+    left: 50%;
+    top: 3px;
+    transform: translateX(-50%);
+  }
+
+  .buyer-node {
+    right: 0;
+    top: 68px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .navbar {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    gap: 4px;
+  }
+
+  .auth-btns {
+    gap: 3px;
+  }
+
+  .auth-btns > .landing-language-wrap
+  .landing-language-button {
+    min-width: 68px !important;
+    width: 68px !important;
+    padding: 0 5px !important;
+    font-size: 8px;
+  }
+
+  .auth-btns > .btn-login {
+    min-width: 52px;
+    width: 52px;
+    padding: 0 5px;
+    font-size: 8px;
+  }
+
+  .auth-btns > .btn-signup {
+    min-width: 52px;
+    width: 52px;
+    padding: 0 5px;
+    font-size: 8px;
+  }
+
+
+  /* ---------- HERO NETWORK ---------- */
+
+  .hero-network {
+    width: min(285px, calc(100vw - 24px));
+    height: 155px;
+    top: 325px;
+    transform: translateX(50%) scale(0.78);
+  }
+
+  .network-node strong,
+  .network-node span {
+    color: #ffffff;
+  }
+
+  .network-line {
+    border-top-color: #ffffff;
+  }
+
+  .line-1 {
+    left: 44px;
+    top: 39px;
+    width: 112px;
+    height: 45px;
+    transform: rotate(-11deg);
+  }
+
+  .line-2 {
+    right: 44px;
+    top: 44px;
+    width: 112px;
+    height: 45px;
+    transform: rotate(17deg);
+  }
+
+  .farmer-node {
+    left: 0;
+    top: 58px;
+  }
+
+  .logistics-node {
+    left: 50%;
+    top: 2px;
+    transform: translateX(-50%);
+  }
+
+  .buyer-node {
+    right: 0;
+    top: 65px;
+  }
+}
+.role-card.farmer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 85px;
+  background-image: url("/farmer_card.png");
+  background-size: 100% auto;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.role-card.logistics::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52px;
+  background-image: url("/logistics_card.png");
+  background-size: 100% auto;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.role-card.buyer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 63px;
+  background-image: url("/buyer_card.png");
+  background-size: 100% auto;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+@media (max-width: 550px) {
+  .role-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .role-card.farmer::after {
+    height: 72px;
+    bottom: 0;
+    background-position: center bottom;
+    background-size: 100% auto;
+  }
+
+  .role-card.logistics::after {
+    height: 46px;
+    bottom: 0;
+    background-position: center bottom;
+    background-size: 100% auto;
+  }
+
+  .role-card.buyer::after {
+    height: 54px;
+    bottom: 0;
+    background-position: center bottom;
+    background-size: 100% auto;
   }
 }
