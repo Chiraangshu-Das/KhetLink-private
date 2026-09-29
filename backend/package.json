@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "node --experimental-vm-modules dist/index.js",
+    "build": "prisma generate && tsc",
+    "start": "node --experimental-vm-modules dist/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

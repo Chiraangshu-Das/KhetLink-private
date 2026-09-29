@@ -6,7 +6,7 @@
     // "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "ESNext",
+    "module": "NodeNext",
     "target": "ES2023",
     "types": ["node"],
     // For nodejs:
@@ -38,6 +38,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "ignoreDeprecations": "6.0",
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
   }
 }
