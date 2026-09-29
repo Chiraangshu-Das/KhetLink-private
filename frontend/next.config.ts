@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/api/:path*",
+        destination: "https://khetlink-backend-b51p.onrender.com/api/:path*",
       },
     ];
   },

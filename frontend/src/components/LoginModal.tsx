@@ -105,7 +105,7 @@ export default function LoginModal({ onClose, onSignUp, onAuthenticated }: Login
         {/* LOGO */}
         <div className="login-logo">
           <img
-            src="/KhetLink_Logo.svg"
+            src="/Khetlink_Logo.svg"
             alt="KhetLink Logo"
           />
         </div>

@@ -308,7 +308,7 @@ export default function LandingPage() {
 
             <div className="logo-icon-slot">
 
-              <img src="./KhetLink_Logo.svg" alt="KhetLink Logo" width={38} height={38} />
+              <img src="./Khetlink_Logo.svg" alt="KhetLink Logo" width={38} height={38} />
 
             </div>
 
@@ -472,7 +472,7 @@ export default function LandingPage() {
 
           <div className="logo-group">
 
-            <div className="logo-icon-slot"><img src="./KhetLink_Logo.svg" alt="KhetLink Logo" width={34} height={34} /></div>
+            <div className="logo-icon-slot"><img src="./Khetlink_Logo.svg" alt="KhetLink Logo" width={34} height={34} /></div>
 
             <div><div className="brand-title">KhetLink</div><div className="brand-subtitle"> Farm Fresh • Smart Supply </div></div>
 
@@ -1084,7 +1084,7 @@ export default function LandingPage() {
 
             <div className="footer-logo">
 
-              <img className="footer-logo-container" src="./KhetLink_Logo.svg" alt="KhetLink Logo" width={38} height={38} />
+              <img className="footer-logo-container" src="./Khetlink_Logo.svg" alt="KhetLink Logo" width={38} height={38} />
 
             </div>
 

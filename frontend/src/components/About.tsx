@@ -135,7 +135,7 @@ export default function About() {
           <div className="about-brand">
             <div className="about-logo">
               <img
-                src="/KhetLink_Logo.svg"
+                src="/Khetlink_Logo.svg"
                 alt="KhetLink Logo"
               />
             </div>
@@ -441,7 +441,7 @@ export default function About() {
 
               <div className="why-logo">
                 <img
-                  src="/KhetLink_Logo.svg"
+                  src="/Khetlink_Logo.svg"
                   alt="KhetLink"
                 />
               </div>
@@ -673,7 +673,7 @@ export default function About() {
 
             <div className="closing-logo">
               <img
-                src="/KhetLink_Logo.svg"
+                src="/Khetlink_Logo.svg"
                 alt="KhetLink Logo"
               />
             </div>

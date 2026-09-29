@@ -84,7 +84,7 @@ export default function TermsAndConditions({
 
             <div className="terms-logo">
               <img
-                src="/KhetLink_Logo.svg"
+                src="/Khetlink_Logo.svg"
                 alt="KhetLink Logo"
               />
             </div>
